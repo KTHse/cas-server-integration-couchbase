@@ -1,16 +1,50 @@
 cas-server-integration-couchbase
 ================================
 
-Couchbase integration, ticket and service registries, for the CAS server.
+Couchbase integration, ticket and service registries, for the Jasig CAS,
+(http://www.jasig.org/cas) server. Couchbase, (http://www.couchbase.com), 
+is a high availabiltiy, open source NoSQL database server based on 
+Erlang/OTP (http://www.erlang.org) and its mnesia database.
 
-## Couchbase server configuration ##
+The intention of the cas-server-integration-couchbase module is to leverage
+the capability of Couchbase server to provide a high availability Jasig CAS server.
+
+
+## Maven configuration to use this module ##
+
+Add the repo and the dependency to their respective blocks. There is currently
+only a snapshot version available.
+
+```xml
+  <repositories>
+    <repository>
+      <id>kth-infosys</id>
+      <name>KTH Infosys Maven Repository</name>
+      <url>https://github.com/KTHse/mvn-repo/raw/master/snapshots/</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>se.kth.infosys</groupId>
+      <artifactId>cas-server-integration-couchbase</artifactId>
+      <version>0.1.0</version>
+    </dependency>
+  <dependencies>
+```
+
+
+## Configuration and usage of the module ##
+
+### Couchbase server configuration ###
 
 The Couchbase integration currently assumes that the ticket and server registries are stored
 in their own vBuckets. Hence create one vBucket each for the CouchbaseServiceRegistryDaoImpl
 and the CouchbaseTicketRegistry. Optionally set passwords for the buckets, optionally setup
 redundancy and replication as per normal Couchbase configuration.
 
-## Configuration of Service Registry, deployerConfig.xml ##
+
+### Configuration of Service Registry, deployerConfig.xml ###
 
 The service registry can be created with the following configuration in deployerConfig.xml,
 replacing the existing serviceRegistryDao bean.
@@ -34,7 +68,8 @@ replacing the existing serviceRegistryDao bean.
   </bean>
 ```
 
-## Configuration of Ticket Registry, ticketRegistry.xml ##
+
+### Configuration of Ticket Registry, ticketRegistry.xml ###
 
 Replace the ticketRegistry.xml file with the following.
 
@@ -66,20 +101,45 @@ Replace the ticketRegistry.xml file with the following.
 </beans>
 ```
 
-## More about configuration of the CouchbaseClientFactory ##
+
+### More about configuration of the CouchbaseClientFactory ###
 
 The only truly mandatory setting of the CouchbaseClientFactory is the list of URIs.
 The other settings are optional, but the registers are designed to be stored in buckets
 of their own as mentioned above, so in reality the bucket property must also be set.
 
-### Properties ###
+
+#### Properties ####
 
 * `uris` _Required_. List of URIs to the Couchbase servers.
 * `bucket` _Optional (well, sort of)_. Name of the bucket to use for this client.
 * `password` _Optional_. The optional password set for the bucket.
 
-## More about configuration of the CouchbaseTicketRegistry ##
+
+### More about configuration of the CouchbaseTicketRegistry ###
 
 The CouchbaseTicketRegistry can optionally take a parameter `registeredServices` 
 containing a list of pre-registered services to create in the registry at system
 startup.
+
+
+## Status of the project ##
+
+Currently a non-redundant server running Couchbase as a backend for the 
+MemcacheTicketRegistry is in production at KTH.
+
+The server based on Couchbase is currently in development and development testing at KTH.
+It will soon be deployed for integration testing in a larger reference environment.
+Later this spring (2013) it is expected to deploy the couchbase aware server to production 
+at KTH. Around that time we will start to test redundant configurations using this server
+in the reference environment for future deployment in production.  
+
+
+## Code management ##
+
+This project uses git and git flow style branching. Hence, the master branch is the 
+stable release branch, and development is done on the development branch. For more 
+information about the branch model see http://nvie.com/posts/a-successful-git-branching-model/.
+For the `git flow` command line tool, see https://github.com/nvie/gitflow.
+
+Branch version numbering follows the [Semantic versioning](http://semver.org) approach.

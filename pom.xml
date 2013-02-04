@@ -9,6 +9,18 @@
   <artifactId>cas-server-integration-couchbase</artifactId>
   <packaging>jar</packaging>
   <name>Jasig CAS Couchbase Integration</name>
+  <version>0.1.0</version>
+
+  <distributionManagement>
+    <repository>
+      <id>releases</id>
+      <url>https://github.com/KTHse/mvn-repo/raw/master/releases</url>
+    </repository>
+    <snapshotRepository>
+      <id>snapshots</id>
+      <url>https://github.com/KTHse/mvn-repo/raw/master/snapshots</url>
+    </snapshotRepository>
+  </distributionManagement>
 
   <repositories>
     <repository>
@@ -22,7 +34,7 @@
     <dependency>
       <groupId>org.jasig.cas</groupId>
       <artifactId>cas-server-core</artifactId>
-      <version>${project.version}</version>
+      <version>${project.parent.version}</version>
     </dependency>
     
     <!-- CouchBase -->
