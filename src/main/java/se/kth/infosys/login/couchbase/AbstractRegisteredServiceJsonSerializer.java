@@ -24,23 +24,23 @@ import com.google.gson.JsonSerializer;
 public class AbstractRegisteredServiceJsonSerializer 
 implements JsonSerializer<AbstractRegisteredService>, JsonDeserializer<AbstractRegisteredService> {
 
-    public JsonElement serialize(AbstractRegisteredService src, 
-             Type typeOfSrc, JsonSerializationContext context) {
-        JsonObject result = new JsonObject();
-        result.add("type", new JsonPrimitive(src.getClass().getName()));
-        result.add("properties", context.serialize(src, src.getClass()));
-        return result;
-    }
+	public JsonElement serialize(AbstractRegisteredService src, 
+			Type typeOfSrc, JsonSerializationContext context) {
+		JsonObject result = new JsonObject();
+		result.add("type", new JsonPrimitive(src.getClass().getName()));
+		result.add("properties", context.serialize(src, src.getClass()));
+		return result;
+	}
 
-    public AbstractRegisteredService deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
-        throws JsonParseException {
-        JsonObject jsonObject = json.getAsJsonObject();
-        String type = jsonObject.get("type").getAsString();
-        JsonElement element = jsonObject.get("properties");
-        try {
-            return context.deserialize(element, Class.forName(type));
-        } catch (ClassNotFoundException e) {
-            throw new JsonParseException("Unknown element type: " + type, e);
-        }
-    }
+	public AbstractRegisteredService deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+			throws JsonParseException {
+		JsonObject jsonObject = json.getAsJsonObject();
+		String type = jsonObject.get("type").getAsString();
+		JsonElement element = jsonObject.get("properties");
+		try {
+			return context.deserialize(element, Class.forName(type));
+		} catch (ClassNotFoundException e) {
+			throw new JsonParseException("Unknown element type: " + type, e);
+		}
+	}
 }

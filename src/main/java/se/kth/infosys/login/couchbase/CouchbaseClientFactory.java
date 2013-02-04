@@ -25,16 +25,16 @@ import com.couchbase.client.protocol.views.ViewDesign;
  * until successful connection is made.
  */
 public final class CouchbaseClientFactory extends TimerTask {
-    private static final Logger logger = LoggerFactory.getLogger(CouchbaseClientFactory.class);
+	private static final Logger logger = LoggerFactory.getLogger(CouchbaseClientFactory.class);
 	private static final int RETRY_INTERVAL = 10; // seconds.
-    private final Timer timer = new Timer(); 
+	private final Timer timer = new Timer(); 
 
-    private CouchbaseClient client;
+	private CouchbaseClient client;
 
-    @NotNull
+	@NotNull
 	private List<URI> uris;
 
-    /* The name of the bucket, will use the default bucket unless otherwise specified. */
+	/* The name of the bucket, will use the default bucket unless otherwise specified. */
 	private String bucket = "default";
 
 	/* NOTE: username is currently not used in Couchbase 2.0, may be in the future. */
@@ -46,23 +46,23 @@ public final class CouchbaseClientFactory extends TimerTask {
 	/* Design document and views to create in the bucket, if any. */
 	private String designDocument;
 	private List<ViewDesign> views;
-    
-	
+
+
 	/**
 	 * Default constructor. 
 	 */
 	public CouchbaseClientFactory() {}
 
-	
-    /**
-     * Start initializing the client. This will schedule a task that retries 
-     * connection until successful.
-     */
+
+	/**
+	 * Start initializing the client. This will schedule a task that retries 
+	 * connection until successful.
+	 */
 	public void initialize() {
-        timer.scheduleAtFixedRate(this, new Date(), TimeUnit.SECONDS.toMillis(RETRY_INTERVAL));
+		timer.scheduleAtFixedRate(this, new Date(), TimeUnit.SECONDS.toMillis(RETRY_INTERVAL));
 	}
 
-	
+
 	/**
 	 * Inverse of initialize, shuts down the client, cancelling connection 
 	 * task if not completed.
@@ -77,86 +77,86 @@ public final class CouchbaseClientFactory extends TimerTask {
 		}
 	}
 
-	
+
 	/**
 	 * Fetch a client for the database.
 	 * 
 	 * @return the client if available.
 	 * @throws RuntimeException if client is not initialized yet.
 	 */
-    public CouchbaseClient getClient() {
-    	if (client != null) {
-    		return client;
-    	} else {
-    		throw new RuntimeException("Conncetion to bucket " + bucket + " not initialized yet.");
-    	}
-    }
-
-    
-    /**
-     * Register indexes to ensure in the bucket when the client is initialized.
-     * 
-     * @param documentName name of the Couchbase design document.
-     * @param views the list of Couchbase views (i.e. indexes) to create in the document.
-     */
-    public void ensureIndexes(String documentName, List<ViewDesign> views) {
-    	this.designDocument = documentName;
-    	this.views = views;
-    }
-
-    
-    /**
-     * Ensures that all views exists in the database.
-     * 
-     * @param documentName the name of the design document.
-     * @param views the views to ensure exists in the database.
-     */
-    @SuppressWarnings("unchecked")
-	private void doEnsureIndexes(String documentName, List<ViewDesign> views) {
-    	DesignDocument<ViewDesign> document;
-    	try {
-			document = client.getDesignDocument(documentName);
-        	List<ViewDesign> oldViews = document.getViews();
-        	
-        	for (ViewDesign view : views) {
-        		if (!isViewInList(view, oldViews)) {
-        			throw new InvalidViewException("Missing view: " + view.getName());
-        		}
-        	}
-    		logger.info("All views are already created for bucket " + bucket);
-    	} catch (InvalidViewException e) {
-    		logger.warn("Missing indexes in database for document " + documentName + ", creating new.");
-    		document = new DesignDocument<ViewDesign>(documentName);
-    		for (ViewDesign view : views) {
-    			document.getViews().add(view);
-    			if (! client.createDesignDoc(document)) {
-    				throw new InvalidViewException("Failed to create views.");
-    			}
-    		}
-    	}
-    }
-
-
-    private static boolean isViewInList(ViewDesign needle, List<ViewDesign> stack) {
-    	for (ViewDesign view : stack) {
-    		if (equals(needle, view)) {
-    			return true;
-    		}
-    	}
-    	return false;
+	public CouchbaseClient getClient() {
+		if (client != null) {
+			return client;
+		} else {
+			throw new RuntimeException("Conncetion to bucket " + bucket + " not initialized yet.");
+		}
 	}
-    
-    
-    private static boolean equals(ViewDesign d1, ViewDesign d2) {
-    	return (d1.getName().equals(d2.getName())
-    			&& d1.getMap().equals(d2.getMap())
-    			&& d1.getReduce().equals(d2.getReduce()));
-    }
 
 
-    /**
-     * Task to initialize the Couchbase client.
-     */
+	/**
+	 * Register indexes to ensure in the bucket when the client is initialized.
+	 * 
+	 * @param documentName name of the Couchbase design document.
+	 * @param views the list of Couchbase views (i.e. indexes) to create in the document.
+	 */
+	public void ensureIndexes(String documentName, List<ViewDesign> views) {
+		this.designDocument = documentName;
+		this.views = views;
+	}
+
+
+	/**
+	 * Ensures that all views exists in the database.
+	 * 
+	 * @param documentName the name of the design document.
+	 * @param views the views to ensure exists in the database.
+	 */
+	@SuppressWarnings("unchecked")
+	private void doEnsureIndexes(String documentName, List<ViewDesign> views) {
+		DesignDocument<ViewDesign> document;
+		try {
+			document = client.getDesignDocument(documentName);
+			List<ViewDesign> oldViews = document.getViews();
+
+			for (ViewDesign view : views) {
+				if (!isViewInList(view, oldViews)) {
+					throw new InvalidViewException("Missing view: " + view.getName());
+				}
+			}
+			logger.info("All views are already created for bucket " + bucket);
+		} catch (InvalidViewException e) {
+			logger.warn("Missing indexes in database for document " + documentName + ", creating new.");
+			document = new DesignDocument<ViewDesign>(documentName);
+			for (ViewDesign view : views) {
+				document.getViews().add(view);
+				if (! client.createDesignDoc(document)) {
+					throw new InvalidViewException("Failed to create views.");
+				}
+			}
+		}
+	}
+
+
+	private static boolean isViewInList(ViewDesign needle, List<ViewDesign> stack) {
+		for (ViewDesign view : stack) {
+			if (equals(needle, view)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+
+	private static boolean equals(ViewDesign d1, ViewDesign d2) {
+		return (d1.getName().equals(d2.getName())
+				&& d1.getMap().equals(d2.getMap())
+				&& d1.getReduce().equals(d2.getReduce()));
+	}
+
+
+	/**
+	 * Task to initialize the Couchbase client.
+	 */
 	public void run() {
 		try {
 			logger.info("Trying to connect to couchbase bucket " + bucket);
