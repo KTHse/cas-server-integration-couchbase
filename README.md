@@ -74,9 +74,9 @@ of their own as mentioned above, so in reality the bucket property must also be 
 
 ### Properties ###
 
-`uris` Required. List of URIs to the Couchbase servers.
-`bucket` Optional. Name of the bucket to use for this client.
-`password` Optional. The optional password set for the bucket.
+* `uris` _Required_. List of URIs to the Couchbase servers.
+* `bucket` _Optional (well, sort of)_. Name of the bucket to use for this client.
+* `password` _Optional_. The optional password set for the bucket.
 
 ## More about configuration of the CouchbaseTicketRegistry ##
 
