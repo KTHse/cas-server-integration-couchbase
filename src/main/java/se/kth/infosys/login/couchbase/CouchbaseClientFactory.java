@@ -37,10 +37,10 @@ public final class CouchbaseClientFactory extends TimerTask {
     /* The name of the bucket, will use the default bucket unless otherwise specified. */
 	private String bucket = "default";
 
-	/* Username is currently not used in Couchbase 2.0, may be in the future. */
+	/* NOTE: username is currently not used in Couchbase 2.0, may be in the future. */
 	private String username = "";
 
-	/* Password for the bucket if any is set. */
+	/* Password for the bucket if any. */
 	private String password = "";
 
 	/* Design document and views to create in the bucket, if any. */
