@@ -172,7 +172,9 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
 
 		while (iterator.hasNext()) {
 			Ticket ticket = getTicket(iterator.next().getId());
-			tickets.add(ticket);
+			if (ticket != null) {
+				tickets.add(ticket);
+			}
 		}
 
 		return Collections.unmodifiableCollection(tickets);
