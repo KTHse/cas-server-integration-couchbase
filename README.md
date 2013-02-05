@@ -137,9 +137,18 @@ in the reference environment for future deployment in production.
 
 ## Code management ##
 
-This project uses git and git flow style branching. Hence, the master branch is the 
-stable release branch, and development is done on the development branch. For more 
-information about the branch model see http://nvie.com/posts/a-successful-git-branching-model/.
+This project uses git and git flow style branching. Hence, the master branch 
+is the stable release branch, and development is done on the development 
+branch. For more information about the branch model see 
+http://nvie.com/posts/a-successful-git-branching-model/.
 For the `git flow` command line tool, see https://github.com/nvie/gitflow.
 
-Branch version numbering follows the [Semantic versioning](http://semver.org) approach.
+Branch version numbering follows the [Semantic versioning](http://semver.org) 
+approach.
+
+
+## License and acknowledgements ##
+
+
+This module is released under the Apache Licens v2, see the file LICENCE.md
+for details.

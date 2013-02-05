@@ -1,10 +1,26 @@
-/**
- * A Ticket Registry storage backend which uses the memcached protocol. 
- * CouchBase is a multi host NoSQL database with a memcached interface to persistent
- * storage which also is quite usable as a replicated tickage storage engine for 
- * multiple front end CAS servers.
- */
 package se.kth.infosys.login.couchbase;
+
+/*
+   Copyright (C) 2013 KTH, Kungliga tekniska hogskolan, http://www.kth.se
+
+   In part derived from work with the following copyright:
+
+   Copyright 2010, JA-SIG, Inc., http://www.jasig.org/
+
+   This file is part of cas-server-integration-couchbase.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+ */
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,7 +45,10 @@ import com.couchbase.client.protocol.views.ViewResponse;
 import com.couchbase.client.protocol.views.ViewRow;
 
 /**
- * Key-value ticket registry implementation that stores tickets in Couchbase keyed on the ticket ID.
+ * A Ticket Registry storage backend which uses the memcached protocol. 
+ * CouchBase is a multi host NoSQL database with a memcached interface 
+ * to persistent storage which also is quite usable as a replicated
+ * tickage storage engine for multiple front end CAS servers.
  */
 public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegistry implements TicketRegistryState {
 	/* Couchbase client factory */
