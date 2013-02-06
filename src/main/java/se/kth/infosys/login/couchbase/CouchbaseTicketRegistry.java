@@ -163,20 +163,20 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
 	 * {@inheritDoc}
 	 */
 	public Collection<Ticket> getTickets() {
-		List<Ticket> tickets = new ArrayList<Ticket>();
 		View allKeys = couchbase.getClient().getView(UTIL_DOCUMENT, ALL_TICKETS_VIEW.getName());
 		Query query = new Query();
 		query.setIncludeDocs(true);
 		ViewResponse response = couchbase.getClient().query(allKeys, query);
 		Iterator<ViewRow> iterator = response.iterator();
 
+        List<Ticket> tickets = new ArrayList<Ticket>();
 		while (iterator.hasNext()) {
-			Ticket ticket = getTicket(iterator.next().getId());
+			Ticket ticket = (Ticket) iterator.next().getDocument();
 			if (ticket != null) {
-				tickets.add(ticket);
-			}
+			    ticket = getProxiedTicketInstance(ticket);
+	            tickets.add(ticket);
+			} 
 		}
-
 		return Collections.unmodifiableCollection(tickets);
 	}
 
