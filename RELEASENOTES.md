@@ -3,7 +3,7 @@ Release notes
 
 1.0.0
 
-* First majore release.
+* First major release.
 * Added some unit tests.
 * Ran some stability tests for a couple of days creating some
   10 000 ticket granting tickets and creating and validating
