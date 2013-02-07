@@ -12,15 +12,14 @@ the capability of Couchbase server to provide a high availability Jasig CAS serv
 
 ## Maven configuration to use this module ##
 
-Add the repo and the dependency to their respective blocks. There is currently
-only a snapshot version available.
+Add the repo and the dependency to their respective blocks.
 
 ```xml
   <repositories>
     <repository>
       <id>kth-infosys</id>
       <name>KTH Infosys Maven Repository</name>
-      <url>https://github.com/KTHse/mvn-repo/raw/master/snapshots/</url>
+      <url>https://github.com/KTHse/mvn-repo/raw/master/releases/</url>
     </repository>
   </repositories>
 
@@ -28,7 +27,7 @@ only a snapshot version available.
     <dependency>
       <groupId>se.kth.infosys</groupId>
       <artifactId>cas-server-integration-couchbase</artifactId>
-      <version>0.1.2</version>
+      <version>1.0.0</version>
     </dependency>
   <dependencies>
 ```
