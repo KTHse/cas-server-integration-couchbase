@@ -272,5 +272,5 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
 			ST_COUNT_VIEW,
 			TGT_COUNT_VIEW
 	});
-	private static final String UTIL_DOCUMENT = "utils";
+	private static final String UTIL_DOCUMENT = "statistics";
 }
