@@ -28,7 +28,7 @@
   <artifactId>cas-server-integration-couchbase</artifactId>
   <packaging>jar</packaging>
   <name>Jasig CAS Couchbase Integration</name>
-  <version>0.1.2</version>
+  <version>1.0.0</version>
 
   <distributionManagement>
     <repository>
@@ -66,6 +66,13 @@
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
       <version>2.2.2</version>
+    </dependency>
+
+    <dependency>
+    	<groupId>org.mockito</groupId>
+    	<artifactId>mockito-core</artifactId>
+    	<version>1.9.5</version>
+    	<scope>test</scope>
     </dependency>
   </dependencies>
 </project>

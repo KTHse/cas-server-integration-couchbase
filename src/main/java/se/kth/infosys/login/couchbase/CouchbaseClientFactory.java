@@ -42,7 +42,7 @@ import com.couchbase.client.protocol.views.ViewDesign;
  * the creation of the client is made using a scheduled task which is repeated
  * until successful connection is made.
  */
-public final class CouchbaseClientFactory extends TimerTask {
+public class CouchbaseClientFactory extends TimerTask {
 	private static final Logger logger = LoggerFactory.getLogger(CouchbaseClientFactory.class);
 	private static final int RETRY_INTERVAL = 10; // seconds.
 	private final Timer timer = new Timer(); 

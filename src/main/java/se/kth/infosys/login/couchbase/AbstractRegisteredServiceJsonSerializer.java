@@ -1,4 +1,5 @@
 package se.kth.infosys.login.couchbase;
+
 /*
    Copyright (C) 2013 KTH, Kungliga tekniska hogskolan, http://www.kth.se
 

@@ -1,6 +1,14 @@
 Release notes
 =============
 
+1.0.0
+
+* First majore release.
+* Added some unit tests.
+* Ran some stability tests for a couple of days creating some
+  10 000 ticket granting tickets and creating and validating
+  some 50 000 service tickets finding no issues.  
+
 0.1.2
 
 * Remove extra round trips to database in CouchbaseTicketRegistry.getTickets().
