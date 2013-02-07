@@ -15,6 +15,9 @@ import org.mockito.stubbing.Answer;
 
 import com.couchbase.client.CouchbaseClient;
 
+/**
+ * Tests for the saving and finding ServiceRegistry classes.
+ */
 public class CouchbaseServiceRegistryTests {
 	/* The subject for testing */
 	private static CouchbaseServiceRegistryDaoImpl serviceRegistry = new CouchbaseServiceRegistryDaoImpl();
