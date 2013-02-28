@@ -1,6 +1,10 @@
 Release notes
 =============
 
+1.1.0
+
+* CAS 3.5.2.
+
 1.0.0
 
 * First major release.
