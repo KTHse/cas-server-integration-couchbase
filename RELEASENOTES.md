@@ -1,9 +1,15 @@
 Release notes
 =============
 
+1.1.0
+
+* CAS 3.5.2.
+* Couchbase client 1.1.2
+* Simplify and remove unnecessary indexes.
+
 1.0.0
 
-* First majore release.
+* First major release.
 * Added some unit tests.
 * Ran some stability tests for a couple of days creating some
   10 000 ticket granting tickets and creating and validating
