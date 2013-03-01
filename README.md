@@ -27,7 +27,7 @@ Add the repo and the dependency to their respective blocks.
     <dependency>
       <groupId>se.kth.infosys</groupId>
       <artifactId>cas-server-integration-couchbase</artifactId>
-      <version>1.0.0</version>
+      <version>1.1.0</version>
     </dependency>
   <dependencies>
 ```
