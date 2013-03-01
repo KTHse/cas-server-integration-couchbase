@@ -38,6 +38,7 @@ import org.jasig.cas.ticket.Ticket;
 import org.jasig.cas.ticket.TicketGrantingTicket;
 import org.jasig.cas.ticket.registry.AbstractDistributedTicketRegistry;
 
+import com.couchbase.client.protocol.views.ComplexKey;
 import com.couchbase.client.protocol.views.Query;
 import com.couchbase.client.protocol.views.View;
 import com.couchbase.client.protocol.views.ViewDesign;
@@ -66,6 +67,7 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
 	 * Default constructor
 	 */
 	public CouchbaseTicketRegistry() {}
+
 
 	/**
 	 * {@inheritDoc}
@@ -166,6 +168,7 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
 		View allKeys = couchbase.getClient().getView(UTIL_DOCUMENT, ALL_TICKETS_VIEW.getName());
 		Query query = new Query();
 		query.setIncludeDocs(true);
+		query.setReduce(false);
 		ViewResponse response = couchbase.getClient().query(allKeys, query);
 		Iterator<ViewRow> iterator = response.iterator();
 
@@ -185,8 +188,12 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
 	 * {@inheritDoc}
 	 */
 	public int sessionCount() {
-		View tgtCountView = couchbase.getClient().getView(UTIL_DOCUMENT, TGT_COUNT_VIEW.getName());
-		return getCountFromView(tgtCountView);
+		Query query = new Query();
+		query.setIncludeDocs(false);
+		query.setRange(ComplexKey.of("TGT-"), ComplexKey.of("TGT-" + "\ufffe"));
+		query.setReduce(true);
+
+		return getCountFromView(query);
 	}
 
 
@@ -194,14 +201,17 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
 	 * {@inheritDoc}
 	 */
 	public int serviceTicketCount() {
-		View stCountView = couchbase.getClient().getView(UTIL_DOCUMENT, ST_COUNT_VIEW.getName());
-		return getCountFromView(stCountView);
+		Query query = new Query();
+		query.setIncludeDocs(false);
+		query.setRange(ComplexKey.of("ST-"), ComplexKey.of("ST-" + "\ufffe"));
+		query.setReduce(true);
+
+		return getCountFromView(query);
 	}
 
 
-	private int getCountFromView(View view) {
-		Query query = new Query();
-		query.setIncludeDocs(false);
+	private int getCountFromView(Query query) {
+		View view = couchbase.getClient().getView(UTIL_DOCUMENT, ALL_TICKETS_VIEW.getName());
 		ViewResponse response = (ViewResponse) couchbase.getClient().query(view, query);
 		Iterator<ViewRow> iterator = response.iterator();
 		if (iterator.hasNext()) {
@@ -258,19 +268,10 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
 	 */
 	private static final ViewDesign ALL_TICKETS_VIEW = new ViewDesign(
 			"all_tickets", 
-			"function(d,m) {emit(m.id);}");
-	private static final ViewDesign ST_COUNT_VIEW = new ViewDesign(
-			"st_count",
-			"function (d,m) {if (m.id.lastIndexOf(\"ST-\") === 0) {emit(m.id);}}",
-			"_count");
-	private static final ViewDesign TGT_COUNT_VIEW = new ViewDesign(
-			"tgt_count",
-			"function (d,m) {if (m.id.lastIndexOf(\"TGT-\") === 0) {emit(m.id);}}",
+			"function(d,m) {emit(m.id);}",
 			"_count");
 	private static final List<ViewDesign> ALL_VIEWS = Arrays.asList(new ViewDesign[] {
-			ALL_TICKETS_VIEW,
-			ST_COUNT_VIEW,
-			TGT_COUNT_VIEW
+			ALL_TICKETS_VIEW
 	});
 	private static final String UTIL_DOCUMENT = "statistics";
 }

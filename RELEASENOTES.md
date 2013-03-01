@@ -4,6 +4,8 @@ Release notes
 1.1.0
 
 * CAS 3.5.2.
+* Couchbase client 1.1.2
+* Simplify and remove unnecessary indexes.
 
 1.0.0
 
