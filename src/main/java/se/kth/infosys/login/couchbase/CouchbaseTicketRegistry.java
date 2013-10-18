@@ -22,10 +22,8 @@ package se.kth.infosys.login.couchbase;
    limitations under the License.
  */
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -165,22 +163,7 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
 	 * {@inheritDoc}
 	 */
 	public Collection<Ticket> getTickets() {
-		View allKeys = couchbase.getClient().getView(UTIL_DOCUMENT, ALL_TICKETS_VIEW.getName());
-		Query query = new Query();
-		query.setIncludeDocs(true);
-		query.setReduce(false);
-		ViewResponse response = couchbase.getClient().query(allKeys, query);
-		Iterator<ViewRow> iterator = response.iterator();
-
-        List<Ticket> tickets = new ArrayList<Ticket>();
-		while (iterator.hasNext()) {
-			Ticket ticket = (Ticket) iterator.next().getDocument();
-			if (ticket != null) {
-			    ticket = getProxiedTicketInstance(ticket);
-	            tickets.add(ticket);
-			} 
-		}
-		return Collections.unmodifiableCollection(tickets);
+	    throw new UnsupportedOperationException("GetTickets not supported.");
 	}
 
 
