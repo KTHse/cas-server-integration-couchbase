@@ -27,6 +27,8 @@ import org.jasig.cas.services.RegexRegisteredService;
 import org.jasig.cas.services.RegisteredService;
 import org.jasig.cas.services.RegisteredServiceImpl;
 import org.junit.BeforeClass;
+import org.junit.FixMethodOrder;
+import org.junit.runners.MethodSorters;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -36,6 +38,7 @@ import com.couchbase.client.CouchbaseClient;
 /**
  * Tests for the saving and finding ServiceRegistry classes.
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class CouchbaseServiceRegistryTests {
 	/* The subject for testing */
 	private static CouchbaseServiceRegistryDaoImpl serviceRegistry = new CouchbaseServiceRegistryDaoImpl();
@@ -81,26 +84,6 @@ public class CouchbaseServiceRegistryTests {
 
 	
 	/*
-	 * Store a RegisteredServiceImpl and see if we get the same back.
-	 */
-	@Test
-	public void testSaveServiceImpl() {
-		RegisteredServiceImpl registeredService = new RegisteredServiceImpl();
-
-		ServiceJsonSerializerTests.setProperties(registeredService);
-		assertEquals(-1, registeredService.getId());
-
-		RegisteredService newService = serviceRegistry.save(registeredService);
-		assertEquals(0, newService.getId());
-
-		RegisteredService service = serviceRegistry.findServiceById(newService.getId());
-		assertNotNull(service);
-		assertTrue(service instanceof RegisteredServiceImpl);
-		ServiceJsonSerializerTests.assertPropertiesEqual(newService, service);
-	}
-
-	
-	/*
 	 * Store a RegexRegisteredService and see if we get the same back.
 	 */
 	@Test
@@ -111,11 +94,31 @@ public class CouchbaseServiceRegistryTests {
 		assertEquals(-1, registeredService.getId());
 
 		RegisteredService newService = serviceRegistry.save(registeredService);
-		assertEquals(1, newService.getId());
+		assertEquals(0, newService.getId());
 
 		RegisteredService service = serviceRegistry.findServiceById(newService.getId());
 		assertNotNull(service);
 		assertTrue(service instanceof RegexRegisteredService);
 		ServiceJsonSerializerTests.assertPropertiesEqual(newService, service);
 	}
+
+
+    /*
+     * Store a RegisteredServiceImpl and see if we get the same back.
+     */
+    @Test
+    public void testSaveServiceImpl() {
+        RegisteredServiceImpl registeredService = new RegisteredServiceImpl();
+
+        ServiceJsonSerializerTests.setProperties(registeredService);
+        assertEquals(-1, registeredService.getId());
+
+        RegisteredService newService = serviceRegistry.save(registeredService);
+        assertEquals(1, newService.getId());
+
+        RegisteredService service = serviceRegistry.findServiceById(newService.getId());
+        assertNotNull(service);
+        assertTrue(service instanceof RegisteredServiceImpl);
+        ServiceJsonSerializerTests.assertPropertiesEqual(newService, service);
+    }
 }
