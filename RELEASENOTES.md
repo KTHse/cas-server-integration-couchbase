@@ -1,6 +1,11 @@
 Release notes
 =============
 
+1.1.1
+* Bugfix: Accessing statistics page with many sessions cause heavy
+  load on server.
+  https://github.com/KTHse/cas-server-integration-couchbase/issues/1
+
 1.1.0
 
 * CAS 3.5.2.
