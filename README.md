@@ -108,7 +108,7 @@ does not reload the service information periodically, as the CAS server does, wh
 causes some issues with the asynchronous setup used in this module. Hence the management
 webapp needs to be setup in the same way as the CAS server with the additional configuration
 
-```
+```xml
 <bean id="serviceRegistryReloaderJobDetail"
     class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean"
     p:targetObject-ref="servicesManager"
