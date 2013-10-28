@@ -27,7 +27,7 @@ Add the repo and the dependency to their respective blocks.
     <dependency>
       <groupId>se.kth.infosys</groupId>
       <artifactId>cas-server-integration-couchbase</artifactId>
-      <version>1.1.0</version>
+      <version>2.0.0</version>
     </dependency>
   <dependencies>
 ```
@@ -100,6 +100,33 @@ Replace the ticketRegistry.xml file with the following.
 </beans>
 ```
 
+### Configuration of the management webapp in CAS 4.0 ###
+
+The CAS management webapp needs the same service registry configuration as the CAS server,
+the configuration is found in managementConfigContext.xml. However, the management webapp 
+does not reload the service information periodically, as the CAS server does, which
+causes some issues with the asynchronous setup used in this module. Hence the management
+webapp needs to be setup in the same way as the CAS server with the additional configuration
+
+```
+<bean id="serviceRegistryReloaderJobDetail"
+    class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean"
+    p:targetObject-ref="servicesManager"
+    p:targetMethod="reload"/>
+
+<bean id="periodicServiceRegistryReloaderTrigger" class="org.springframework.scheduling.quartz.SimpleTriggerBean"
+      p:jobDetail-ref="serviceRegistryReloaderJobDetail"
+      p:startDelay="${service.registry.quartz.reloader.startDelay:120000}"
+      p:repeatInterval="${service.registry.quartz.reloader.repeatInterval:120000}"/>
+
+<bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+  <property name="triggers">
+    <list>
+      <ref bean="periodicServiceRegistryReloaderTrigger"/>
+    </list>
+  </property>
+</bean>
+```
 
 ### More about configuration of the CouchbaseClientFactory ###
 
