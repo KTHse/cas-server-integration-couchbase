@@ -91,7 +91,7 @@ public class CouchbaseServiceRegistryTests {
 		RegexRegisteredService registeredService = new RegexRegisteredService();
 
 		ServiceJsonSerializerTests.setProperties(registeredService);
-		assertEquals(-1, registeredService.getId());
+		assertEquals(RegisteredService.INITIAL_IDENTIFIER_VALUE, registeredService.getId());
 
 		RegisteredService newService = serviceRegistry.save(registeredService);
 		assertEquals(0, newService.getId());
@@ -111,7 +111,7 @@ public class CouchbaseServiceRegistryTests {
         RegisteredServiceImpl registeredService = new RegisteredServiceImpl();
 
         ServiceJsonSerializerTests.setProperties(registeredService);
-        assertEquals(-1, registeredService.getId());
+        assertEquals(RegisteredService.INITIAL_IDENTIFIER_VALUE, registeredService.getId());
 
         RegisteredService newService = serviceRegistry.save(registeredService);
         assertEquals(1, newService.getId());
