@@ -129,9 +129,8 @@ public class CouchbaseClientFactory extends TimerTask {
      * @param documentName the name of the design document.
      * @param views the views to ensure exists in the database.
      */
-    @SuppressWarnings("unchecked")
     private void doEnsureIndexes(final String documentName, final List<ViewDesign> views) {
-        DesignDocument<ViewDesign> document;
+        DesignDocument document;
         try {
             document = client.getDesignDocument(documentName);
             List<ViewDesign> oldViews = document.getViews();
@@ -144,7 +143,7 @@ public class CouchbaseClientFactory extends TimerTask {
             logger.info("All views are already created for bucket " + bucket);
         } catch (final InvalidViewException e) {
             logger.warn("Missing indexes in database for document " + documentName + ", creating new.");
-            document = new DesignDocument<ViewDesign>(documentName);
+            document = new DesignDocument(documentName);
             for (ViewDesign view : views) {
                 document.getViews().add(view);
                 if (!client.createDesignDoc(document)) {

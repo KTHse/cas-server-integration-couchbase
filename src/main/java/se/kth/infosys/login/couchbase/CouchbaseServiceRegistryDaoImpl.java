@@ -86,7 +86,7 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
     public RegisteredService save(final RegisteredService registeredService) {
         logger.debug("Saving service {}", registeredService);
 
-        if (registeredService.getId() == -1) {
+        if (registeredService.getId() == RegisteredService.INITIAL_IDENTIFIER_VALUE) {
             long id = couchbase.getClient().incr("LAST_ID", 1, initialId);
             ((AbstractRegisteredService) registeredService).setId(id);
         }
