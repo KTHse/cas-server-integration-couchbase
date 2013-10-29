@@ -1,7 +1,13 @@
 Release notes
 =============
 
+2.0.0
+
+* CAS 4.0.0
+* Couchbase client 1.2.1
+
 1.1.1
+
 * Bugfix: Accessing statistics page with many sessions cause heavy
   load on server.
   https://github.com/KTHse/cas-server-integration-couchbase/issues/1
