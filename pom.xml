@@ -28,7 +28,7 @@
   <artifactId>cas-server-integration-couchbase</artifactId>
   <packaging>jar</packaging>
   <name>Jasig CAS Couchbase Integration</name>
-  <version>2.0.0-RC2</version>
+  <version>2.0.0-RC3</version>
 
   <distributionManagement>
     <repository>
@@ -78,7 +78,7 @@
     <dependency>
     	<groupId>com.couchbase.client</groupId>
     	<artifactId>couchbase-client</artifactId>
-    	<version>1.2.1</version>
+    	<version>1.2.2</version>
     </dependency>
   </dependencies>
 </project>

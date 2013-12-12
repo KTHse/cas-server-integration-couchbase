@@ -4,7 +4,7 @@ Release notes
 2.0.0
 
 * CAS 4.0.0
-* Couchbase client 1.2.1
+* Couchbase client 1.2.2
 
 1.1.1
 
@@ -24,7 +24,7 @@ Release notes
 * Added some unit tests.
 * Ran some stability tests for a couple of days creating some
   10 000 ticket granting tickets and creating and validating
-  some 50 000 service tickets finding no issues.  
+  some 50 000 service tickets finding no issues.
 
 0.1.2
 
