@@ -176,5 +176,5 @@ approach.
 ## License and acknowledgements ##
 
 
-This module is released under the Apache Licens v2, see the file LICENCE.md
+This module is released under the Apache Licens v2, see the file LICENSE.md
 for details.
