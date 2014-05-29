@@ -1,6 +1,10 @@
 Release notes
 =============
 
+2.1.0
+
+* Couchbase client 1.4.1
+
 2.0.0
 
 * CAS 4.0.0

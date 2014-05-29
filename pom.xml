@@ -28,7 +28,7 @@
   <artifactId>cas-server-integration-couchbase</artifactId>
   <packaging>jar</packaging>
   <name>Jasig CAS Couchbase Integration</name>
-  <version>2.0.0</version>
+  <version>2.1.0</version>
 
   <distributionManagement>
     <repository>
