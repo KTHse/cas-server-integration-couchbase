@@ -132,7 +132,7 @@ public class CouchbaseClientFactory extends TimerTask {
     private void doEnsureIndexes(final String documentName, final List<ViewDesign> views) {
         DesignDocument document;
         try {
-            document = client.getDesignDocument(documentName);
+            document = client.getDesignDoc(documentName);
             List<ViewDesign> oldViews = document.getViews();
 
             for (ViewDesign view : views) {
