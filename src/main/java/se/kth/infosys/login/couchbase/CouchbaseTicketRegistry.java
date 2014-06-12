@@ -57,7 +57,7 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
 
     @Min(0)
     private int stTimeout;
-    
+
     private static String END_TOKEN = "\u02ad";
 
 
@@ -178,9 +178,9 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
      */
     @Override
     public int sessionCount() {
-    	String prefix = TicketGrantingTicketImpl.PREFIX + "-";
+        String prefix = TicketGrantingTicketImpl.PREFIX + "-";
 
-    	Query query = new Query();
+        Query query = new Query();
         query.setIncludeDocs(false);
         query.setRange(ComplexKey.of(prefix), ComplexKey.of(prefix + END_TOKEN));
         query.setReduce(true);
@@ -194,9 +194,9 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
      */
     @Override
     public int serviceTicketCount() {
-    	String prefix = ServiceTicketImpl.PREFIX + "-";
+        String prefix = ServiceTicketImpl.PREFIX + "-";
 
-    	Query query = new Query();
+        Query query = new Query();
         query.setIncludeDocs(false);
         query.setRange(ComplexKey.of(prefix), ComplexKey.of(prefix + END_TOKEN));
         query.setReduce(true);
