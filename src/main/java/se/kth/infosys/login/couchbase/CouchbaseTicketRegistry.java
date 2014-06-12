@@ -28,8 +28,10 @@ import javax.validation.constraints.NotNull;
 
 import org.jasig.cas.monitor.TicketRegistryState;
 import org.jasig.cas.ticket.ServiceTicket;
+import org.jasig.cas.ticket.ServiceTicketImpl;
 import org.jasig.cas.ticket.Ticket;
 import org.jasig.cas.ticket.TicketGrantingTicket;
+import org.jasig.cas.ticket.TicketGrantingTicketImpl;
 import org.jasig.cas.ticket.registry.AbstractDistributedTicketRegistry;
 
 import com.couchbase.client.protocol.views.ComplexKey;
@@ -55,6 +57,8 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
 
     @Min(0)
     private int stTimeout;
+    
+    private static String END_TOKEN = "\u02ad";
 
 
     /**
@@ -174,9 +178,11 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
      */
     @Override
     public int sessionCount() {
-        Query query = new Query();
+    	String prefix = TicketGrantingTicketImpl.PREFIX + "-";
+
+    	Query query = new Query();
         query.setIncludeDocs(false);
-        query.setRange(ComplexKey.of("TGT-"), ComplexKey.of("TGT-" + "\ufffe"));
+        query.setRange(ComplexKey.of(prefix), ComplexKey.of(prefix + END_TOKEN));
         query.setReduce(true);
 
         return getCountFromView(query);
@@ -188,9 +194,11 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
      */
     @Override
     public int serviceTicketCount() {
-        Query query = new Query();
+    	String prefix = ServiceTicketImpl.PREFIX + "-";
+
+    	Query query = new Query();
         query.setIncludeDocs(false);
-        query.setRange(ComplexKey.of("ST-"), ComplexKey.of("ST-" + "\ufffe"));
+        query.setRange(ComplexKey.of(prefix), ComplexKey.of(prefix + END_TOKEN));
         query.setReduce(true);
 
         return getCountFromView(query);
