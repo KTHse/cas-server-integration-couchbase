@@ -1,6 +1,11 @@
 Release notes
 =============
 
+2.1.2
+
+* Couchbase client 1.4.4.
+
+
 2.1.1
 
 * Fix an issue with queries to the view.
