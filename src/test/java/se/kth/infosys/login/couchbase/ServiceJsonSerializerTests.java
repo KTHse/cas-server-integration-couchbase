@@ -18,7 +18,8 @@ package se.kth.infosys.login.couchbase;
  * limitations under the License.
  */
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.jasig.cas.services.AbstractRegisteredService;
 import org.jasig.cas.services.RegexRegisteredService;
@@ -33,74 +34,77 @@ import com.google.gson.GsonBuilder;
 
 /**
  * Tests for the serialization and de-serialization of ServiceRegistry classes.
+ * 
+ * @author Fredrik Jönsson "fjo@kth.se"
+ * @since 4.0
  */
 public class ServiceJsonSerializerTests {
-	private static Gson gson;
-	
-	@BeforeClass
-	public static void beforeClass() {
-		GsonBuilder gsonBilder = new GsonBuilder();
-		gsonBilder.registerTypeAdapter(
-				AbstractRegisteredService.class, 
-				new AbstractRegisteredServiceJsonSerializer());
-		gson = gsonBilder.create();
-	}
+    private static Gson GSON;
 
-	
-	/*
-	 * Verify that serialization/deserialization of RegisteredServiceImpl is reflexive.
-	 */
-	@Test
-	public void testRegisteredServiceImpl() {
-		RegisteredServiceImpl service = new RegisteredServiceImpl();
-		setProperties(service);
-		
-		String json = gson.toJson(service, AbstractRegisteredService.class);
-		RegisteredService deserializedService = gson.fromJson(json, AbstractRegisteredService.class);
-		
-		assertTrue(deserializedService instanceof RegisteredServiceImpl);
-		assertPropertiesEqual(service, (RegisteredServiceImpl) deserializedService);
-	}
+    @BeforeClass
+    public static void beforeClass() {
+        final GsonBuilder gsonBilder = new GsonBuilder();
+        gsonBilder.registerTypeAdapter(
+                AbstractRegisteredService.class, 
+                new AbstractRegisteredServiceJsonSerializer());
+        GSON = gsonBilder.create();
+    }
 
-	
-	/*
-	 * Verify that serialization/deserialization of RegexRegisteredService is reflexive.
-	 */
-	@Test
-	public void testRegexRegisteredService() {
-		RegexRegisteredService service = new RegexRegisteredService();
-		setProperties(service);
-		
-		String json = gson.toJson(service, AbstractRegisteredService.class);
-		RegisteredService deserializedService = gson.fromJson(json, AbstractRegisteredService.class);
-		
-		assertTrue(deserializedService instanceof RegexRegisteredService);
-		assertPropertiesEqual(service, (RegexRegisteredService) deserializedService);
-	}
 
-	
-	public static void setProperties(AbstractRegisteredService service) {
-		service.setAllowedToProxy(false);
-		service.setDescription("description");
-		service.setEnabled(true);
-		service.setEvaluationOrder(2);
-		service.setName("service");
-		service.setServiceId("http://foo.bar");
-		service.setSsoEnabled(true);
-		service.setTheme("theme");
-		service.setUsernameAttribute("kthid");
-	}
+    /*
+     * Verify that serialization/deserialization of RegisteredServiceImpl is reflexive.
+     */
+    @Test
+    public void registeredServiceImpl() {
+        final RegisteredServiceImpl service = new RegisteredServiceImpl();
+        setProperties(service);
 
-	
-	public static void assertPropertiesEqual(RegisteredService s1, RegisteredService s2) {
-		assertEquals(s1.isAllowedToProxy(), s2.isAllowedToProxy());
-		assertEquals(s1.getDescription(), s2.getDescription());
-		assertEquals(s1.getEvaluationOrder(), s2.getEvaluationOrder());
-		assertEquals(s1.getId(), s2.getId());
-		assertEquals(s1.getName(), s2.getName());
-		assertEquals(s1.getServiceId(), s2.getServiceId());
-		assertEquals(s1.isSsoEnabled(), s2.isSsoEnabled());
-		assertEquals(s1.getTheme(), s2.getTheme());
-		assertEquals(s1.getUsernameAttribute(), s2.getUsernameAttribute());
-	}
+        final String json = GSON.toJson(service, AbstractRegisteredService.class);
+        final RegisteredService deserializedService = GSON.fromJson(json, AbstractRegisteredService.class);
+
+        assertTrue(deserializedService instanceof RegisteredServiceImpl);
+        assertPropertiesEqual(service, (RegisteredServiceImpl) deserializedService);
+    }
+
+
+    /*
+     * Verify that serialization/deserialization of RegexRegisteredService is reflexive.
+     */
+    @Test
+    public void regexRegisteredService() {
+        final RegexRegisteredService service = new RegexRegisteredService();
+        setProperties(service);
+
+        final String json = GSON.toJson(service, AbstractRegisteredService.class);
+        final RegisteredService deserializedService = GSON.fromJson(json, AbstractRegisteredService.class);
+
+        assertTrue(deserializedService instanceof RegexRegisteredService);
+        assertPropertiesEqual(service, (RegexRegisteredService) deserializedService);
+    }
+
+
+    public static void setProperties(final AbstractRegisteredService service) {
+        service.setAllowedToProxy(false);
+        service.setDescription("description");
+        service.setEnabled(true);
+        service.setEvaluationOrder(2);
+        service.setName("service");
+        service.setServiceId("http://foo.bar");
+        service.setSsoEnabled(true);
+        service.setTheme("theme");
+        service.setUsernameAttribute("kthid");
+    }
+
+
+    public static void assertPropertiesEqual(final RegisteredService s1, final RegisteredService s2) {
+        assertEquals(s1.isAllowedToProxy(), s2.isAllowedToProxy());
+        assertEquals(s1.getDescription(), s2.getDescription());
+        assertEquals(s1.getEvaluationOrder(), s2.getEvaluationOrder());
+        assertEquals(s1.getId(), s2.getId());
+        assertEquals(s1.getName(), s2.getName());
+        assertEquals(s1.getServiceId(), s2.getServiceId());
+        assertEquals(s1.isSsoEnabled(), s2.isSsoEnabled());
+        assertEquals(s1.getTheme(), s2.getTheme());
+        assertEquals(s1.getUsernameAttribute(), s2.getUsernameAttribute());
+    }
 }

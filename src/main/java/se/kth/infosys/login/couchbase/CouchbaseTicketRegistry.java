@@ -34,7 +34,7 @@ import org.jasig.cas.ticket.TicketGrantingTicket;
 import org.jasig.cas.ticket.TicketGrantingTicketImpl;
 import org.jasig.cas.ticket.registry.AbstractDistributedTicketRegistry;
 
-import com.couchbase.client.protocol.views.ComplexKey;
+import com.couchbase.client.CouchbaseClient;
 import com.couchbase.client.protocol.views.Query;
 import com.couchbase.client.protocol.views.View;
 import com.couchbase.client.protocol.views.ViewDesign;
@@ -46,8 +46,23 @@ import com.couchbase.client.protocol.views.ViewRow;
  * CouchBase is a multi host NoSQL database with a memcached interface
  * to persistent storage which also is quite usable as a replicated
  * tickage storage engine for multiple front end CAS servers.
+ * 
+ * @author Fredrik Jönsson "fjo@kth.se"
+ * @since 4.0
  */
 public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegistry implements TicketRegistryState {
+    /*
+     * Views, or indexes, in the database. 
+     */
+    private static final ViewDesign ALL_TICKETS_VIEW = new ViewDesign(
+            "all_tickets", 
+            "function(d,m) {emit(m.id);}",
+            "_count");
+    private static final List<ViewDesign> ALL_VIEWS = Arrays.asList(new ViewDesign[] {
+            ALL_TICKETS_VIEW
+    });
+    private static final String UTIL_DOCUMENT = "statistics";
+
     /* Couchbase client factory */
     @NotNull
     private CouchbaseClientFactory couchbase;
@@ -57,9 +72,6 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
 
     @Min(0)
     private int stTimeout;
-
-    private static String END_TOKEN = "\u02ad";
-
 
     /**
      * Default constructor.
@@ -178,11 +190,11 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
      */
     @Override
     public int sessionCount() {
-        String prefix = TicketGrantingTicketImpl.PREFIX + "-";
+        final String prefix = TicketGrantingTicketImpl.PREFIX + "-";
 
-        Query query = new Query();
+        final Query query = new Query();
         query.setIncludeDocs(false);
-        query.setRange(ComplexKey.of(prefix), ComplexKey.of(prefix + END_TOKEN));
+        query.setRangeStart(prefix);
         query.setReduce(true);
 
         return getCountFromView(query);
@@ -194,11 +206,11 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
      */
     @Override
     public int serviceTicketCount() {
-        String prefix = ServiceTicketImpl.PREFIX + "-";
+        final String prefix = ServiceTicketImpl.PREFIX + "-";
 
-        Query query = new Query();
+        final Query query = new Query();
         query.setIncludeDocs(false);
-        query.setRange(ComplexKey.of(prefix), ComplexKey.of(prefix + END_TOKEN));
+        query.setRangeStart(prefix);
         query.setReduce(true);
 
         return getCountFromView(query);
@@ -211,15 +223,15 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
      * @return number of items in view as reported by couchbase.
      */
     private int getCountFromView(final Query query) {
-        View view = couchbase.getClient().getView(UTIL_DOCUMENT, ALL_TICKETS_VIEW.getName());
-        ViewResponse response = (ViewResponse) couchbase.getClient().query(view, query);
-        Iterator<ViewRow> iterator = response.iterator();
+        final CouchbaseClient client = couchbase.getClient();
+        final View view = client.getView(UTIL_DOCUMENT, ALL_TICKETS_VIEW.getName());
+        final ViewResponse response = (ViewResponse) client.query(view, query);
+        final Iterator<ViewRow> iterator = response.iterator();
         if (iterator.hasNext()) {
-            ViewRow res = response.iterator().next();
-            return Integer.valueOf(res.getValue());
-        } else {
-            return 0;
+            final ViewRow res = iterator.next();
+            return Integer.parseInt(res.getValue());
         }
+        return 0;
     }
 
 
@@ -265,17 +277,4 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
     public void setCouchbase(final CouchbaseClientFactory couchbase) {
         this.couchbase = couchbase;
     }
-
-
-    /*
-     * Views, or indexes, in the database. 
-     */
-    private static final ViewDesign ALL_TICKETS_VIEW = new ViewDesign(
-            "all_tickets", 
-            "function(d,m) {emit(m.id);}",
-            "_count");
-    private static final List<ViewDesign> ALL_VIEWS = Arrays.asList(new ViewDesign[] {
-            ALL_TICKETS_VIEW
-    });
-    private static final String UTIL_DOCUMENT = "statistics";
 }

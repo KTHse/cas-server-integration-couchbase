@@ -35,6 +35,7 @@ import org.jasig.cas.services.ServiceRegistryDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.couchbase.client.CouchbaseClient;
 import com.couchbase.client.protocol.views.Query;
 import com.couchbase.client.protocol.views.View;
 import com.couchbase.client.protocol.views.ViewDesign;
@@ -49,13 +50,26 @@ import com.google.gson.GsonBuilder;
  * multi host NoSQL database with a memcached interface to persistent
  * storage which also is quite usable as a replicated tickage storage
  * engine for multiple front end CAS servers.
+ * 
+ * @author Fredrik Jönsson "fjo@kth.se"
+ * @since 4.0
  */
 public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements ServiceRegistryDao {
-    private final Logger logger = LoggerFactory.getLogger(CouchbaseServiceRegistryDaoImpl.class);
-
     private static final Timer TIMER = new Timer();
-
     private static final long RETRY_INTERVAL = 10;
+
+    /*
+     * Views, or indexes, in the database.
+     */
+    private static final ViewDesign ALL_SERVICES_VIEW = new ViewDesign(
+            "all_services",
+            "function(d,m) {if (!isNaN(m.id)) {emit(m.id);}}");
+    private static final List<ViewDesign> ALL_VIEWS = Arrays.asList(new ViewDesign[] {
+            ALL_SERVICES_VIEW
+    });
+    private static final String UTIL_DOCUMENT = "utils";
+
+    private final Logger logger = LoggerFactory.getLogger(CouchbaseServiceRegistryDaoImpl.class);
 
     private final Gson gson;
 
@@ -67,13 +81,13 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
     private final List<RegisteredService> registeredServices = new LinkedList<RegisteredService>();
 
     /* Initial service id for added services. */
-    private int initialId = 0;
+    private int initialId;
 
     /**
      * Default constructor.
      */
     public CouchbaseServiceRegistryDaoImpl() {
-        GsonBuilder gsonBilder = new GsonBuilder();
+        final GsonBuilder gsonBilder = new GsonBuilder();
         gsonBilder.registerTypeAdapter(AbstractRegisteredService.class, new AbstractRegisteredServiceJsonSerializer());
         gson = gsonBilder.create();
     }
@@ -87,7 +101,7 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
         logger.debug("Saving service {}", registeredService);
 
         if (registeredService.getId() == RegisteredService.INITIAL_IDENTIFIER_VALUE) {
-            long id = couchbase.getClient().incr("LAST_ID", 1, initialId);
+            final long id = couchbase.getClient().incr("LAST_ID", 1, initialId);
             ((AbstractRegisteredService) registeredService).setId(id);
         }
 
@@ -118,16 +132,17 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
         try {
             logger.debug("Loading services");
 
-            View allKeys = couchbase.getClient().getView(UTIL_DOCUMENT, ALL_SERVICES_VIEW.getName());
-            Query query = new Query();
+            final CouchbaseClient client = couchbase.getClient();
+            final View allKeys = client.getView(UTIL_DOCUMENT, ALL_SERVICES_VIEW.getName());
+            final Query query = new Query();
             query.setIncludeDocs(true);
-            ViewResponse response = couchbase.getClient().query(allKeys, query);
-            Iterator<ViewRow> iterator = response.iterator();
+            final ViewResponse response = client.query(allKeys, query);
+            final Iterator<ViewRow> iterator = response.iterator();
 
-            List<RegisteredService> services = new LinkedList<RegisteredService>();
+            final List<RegisteredService> services = new LinkedList<RegisteredService>();
             while (iterator.hasNext()) {
-                String json = (String) iterator.next().getDocument();
-                logger.debug("Found service: " + json);
+                final String json = (String) iterator.next().getDocument();
+                logger.debug("Found service: {}", json);
                 services.add((RegisteredService) gson.fromJson(json, AbstractRegisteredService.class));
             }
             return services;
@@ -187,25 +202,13 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
     }
 
 
-    /*
-     * Views, or indexes, in the database.
-     */
-    private static final ViewDesign ALL_SERVICES_VIEW = new ViewDesign(
-            "all_services",
-            "function(d,m) {if (!isNaN(m.id)) {emit(m.id);}}");
-    private static final List<ViewDesign> ALL_VIEWS = Arrays.asList(new ViewDesign[] {
-            ALL_SERVICES_VIEW
-    });
-    private static final String UTIL_DOCUMENT = "utils";
-
-
     /**
      * {@inheritDoc}
      */
     @Override
     public void run() {
         try {
-            for (RegisteredService service : registeredServices) {
+            for (final RegisteredService service : registeredServices) {
                 save(service);
             }
             TIMER.cancel();

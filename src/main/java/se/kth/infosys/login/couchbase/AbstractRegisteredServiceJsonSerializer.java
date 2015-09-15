@@ -38,6 +38,9 @@ import com.google.gson.JsonSerializer;
  * the the object using the proper class. It will store the object "type"
  * of the class in the JSON object together with a "properties" field
  * containing the values of the object properties.
+ * 
+ * @author Fredrik Jönsson "fjo@kth.se"
+ * @since 4.0
  */
 public class AbstractRegisteredServiceJsonSerializer
 implements JsonSerializer<AbstractRegisteredService>, JsonDeserializer<AbstractRegisteredService> {
@@ -46,29 +49,29 @@ implements JsonSerializer<AbstractRegisteredService>, JsonDeserializer<AbstractR
      * @param src CAS Service.
      * @param typeOfSrc (ignored).
      * @param context Gson serialization context.
-     * @see JsonSerializer#serialize(Object, Type, JsonSerializationContext)
      * @return JSON serialized version of a CAS service.
+     * @see JsonSerializer#serialize(Object, Type, JsonSerializationContext)
      */
     public final JsonElement serialize(
             final AbstractRegisteredService src, final Type typeOfSrc, final JsonSerializationContext context) {
-        JsonObject result = new JsonObject();
+        final JsonObject result = new JsonObject();
         result.add("type", new JsonPrimitive(src.getClass().getName()));
         result.add("properties", context.serialize(src, src.getClass()));
         return result;
     }
 
     /**
-     * @see JsonDeserializer#deserialize(JsonElement, Type, JsonDeserializationContext)
      * @param json JSON encoded representation of CAS Service.
      * @param typeOfT (ignored).
      * @param context Gson de-serialization context.
      * @return de-serialized version of a CAS service.
+     * @see JsonDeserializer#deserialize(JsonElement, Type, JsonDeserializationContext)
      */
     public final AbstractRegisteredService deserialize(
             final JsonElement json, final Type typeOfT, final JsonDeserializationContext context) {
-        JsonObject jsonObject = json.getAsJsonObject();
-        String type = jsonObject.get("type").getAsString();
-        JsonElement element = jsonObject.get("properties");
+        final JsonObject jsonObject = json.getAsJsonObject();
+        final String type = jsonObject.get("type").getAsString();
+        final JsonElement element = jsonObject.get("properties");
         try {
             return context.deserialize(element, Class.forName(type));
         } catch (final ClassNotFoundException e) {

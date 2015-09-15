@@ -41,10 +41,14 @@ import com.couchbase.client.protocol.views.ViewDesign;
  * is unavailable, picking up the connection when Couchbase comes online. Hence
  * the creation of the client is made using a scheduled task which is repeated
  * until successful connection is made.
+ * 
+ * @author Fredrik Jönsson "fjo@kth.se"
+ * @since 4.0
  */
 public class CouchbaseClientFactory extends TimerTask {
-    private final Logger logger = LoggerFactory.getLogger(CouchbaseClientFactory.class);
     private static final int RETRY_INTERVAL = 10; // seconds.
+
+    private final Logger logger = LoggerFactory.getLogger(CouchbaseClientFactory.class);
     private final Timer timer = new Timer();
 
     private CouchbaseClient client;
@@ -133,18 +137,18 @@ public class CouchbaseClientFactory extends TimerTask {
         DesignDocument document;
         try {
             document = client.getDesignDoc(documentName);
-            List<ViewDesign> oldViews = document.getViews();
+            final List<ViewDesign> oldViews = document.getViews();
 
-            for (ViewDesign view : views) {
+            for (final ViewDesign view : views) {
                 if (!isViewInList(view, oldViews)) {
                     throw new InvalidViewException("Missing view: " + view.getName());
                 }
             }
-            logger.info("All views are already created for bucket " + bucket);
+            logger.info("All views are already created for bucket {}", bucket);
         } catch (final InvalidViewException e) {
-            logger.warn("Missing indexes in database for document " + documentName + ", creating new.");
+            logger.warn("Missing indexes in database for document {}, creating new.", documentName);
             document = new DesignDocument(documentName);
-            for (ViewDesign view : views) {
+            for (final ViewDesign view : views) {
                 document.getViews().add(view);
                 if (!client.createDesignDoc(document)) {
                     throw new InvalidViewException("Failed to create views.");
@@ -160,7 +164,7 @@ public class CouchbaseClientFactory extends TimerTask {
      * @return true if needle exists in stack
      */
     private static boolean isViewInList(final ViewDesign needle, final List<ViewDesign> stack) {
-        for (ViewDesign view : stack) {
+        for (final ViewDesign view : stack) {
             if (equals(needle, view)) {
                 return true;
             }
@@ -186,14 +190,14 @@ public class CouchbaseClientFactory extends TimerTask {
      */
     public void run() {
         try {
-            logger.info("Trying to connect to couchbase bucket " + bucket);
+            logger.info("Trying to connect to couchbase bucket {}", bucket);
             client = new CouchbaseClient(uris, bucket, username, password);
             timer.cancel();
             if (views != null) {
                 doEnsureIndexes(designDocument, views);
             }
         } catch (final Exception e) {
-            logger.error("Failed to connect to Couchbase bucket " + bucket + ", retrying...");
+            logger.error("Failed to connect to Couchbase bucket {}, retrying...", bucket);
         }
     }
 
