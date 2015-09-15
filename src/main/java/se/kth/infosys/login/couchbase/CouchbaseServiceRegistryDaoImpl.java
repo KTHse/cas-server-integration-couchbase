@@ -18,6 +18,8 @@ package se.kth.infosys.login.couchbase;
  * limitations under the License.
  */
 
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
@@ -32,6 +34,7 @@ import javax.validation.constraints.NotNull;
 import org.jasig.cas.services.AbstractRegisteredService;
 import org.jasig.cas.services.RegisteredService;
 import org.jasig.cas.services.ServiceRegistryDao;
+import org.jasig.cas.util.JsonSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,8 +44,6 @@ import com.couchbase.client.protocol.views.View;
 import com.couchbase.client.protocol.views.ViewDesign;
 import com.couchbase.client.protocol.views.ViewResponse;
 import com.couchbase.client.protocol.views.ViewRow;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 /**
  * A Service Registry storage backend which uses the memcached protocol.
@@ -52,7 +53,7 @@ import com.google.gson.GsonBuilder;
  * engine for multiple front end CAS servers.
  * 
  * @author Fredrik Jönsson "fjo@kth.se"
- * @since 4.0
+ * @since 4.1
  */
 public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements ServiceRegistryDao {
     private static final Timer TIMER = new Timer();
@@ -71,8 +72,6 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
 
     private final Logger logger = LoggerFactory.getLogger(CouchbaseServiceRegistryDaoImpl.class);
 
-    private final Gson gson;
-
     /* Couchbase client factory */
     @NotNull
     private CouchbaseClientFactory couchbase;
@@ -83,13 +82,14 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
     /* Initial service id for added services. */
     private int initialId;
 
+    private final JsonSerializer<RegisteredService> registeredServiceJsonSerializer;
+
     /**
      * Default constructor.
+     * @param registeredServiceJsonSerializer the JSON serializer to use.
      */
-    public CouchbaseServiceRegistryDaoImpl() {
-        final GsonBuilder gsonBilder = new GsonBuilder();
-        gsonBilder.registerTypeAdapter(AbstractRegisteredService.class, new AbstractRegisteredServiceJsonSerializer());
-        gson = gsonBilder.create();
+    public CouchbaseServiceRegistryDaoImpl(final JsonSerializer<RegisteredService> registeredServiceJsonSerializer) {
+        this.registeredServiceJsonSerializer = registeredServiceJsonSerializer;
     }
 
 
@@ -100,6 +100,9 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
     public RegisteredService save(final RegisteredService registeredService) {
         logger.debug("Saving service {}", registeredService);
 
+        final StringWriter stringWriter = new StringWriter();
+        registeredServiceJsonSerializer.toJson(stringWriter, registeredService);
+        
         if (registeredService.getId() == RegisteredService.INITIAL_IDENTIFIER_VALUE) {
             final long id = couchbase.getClient().incr("LAST_ID", 1, initialId);
             ((AbstractRegisteredService) registeredService).setId(id);
@@ -107,8 +110,8 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
 
         couchbase.getClient().set(
                 String.valueOf(registeredService.getId()), 
-                0, 
-                gson.toJson(registeredService, AbstractRegisteredService.class));
+                0,
+                stringWriter.toString());
         return registeredService;
     }
 
@@ -143,7 +146,9 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
             while (iterator.hasNext()) {
                 final String json = (String) iterator.next().getDocument();
                 logger.debug("Found service: {}", json);
-                services.add((RegisteredService) gson.fromJson(json, AbstractRegisteredService.class));
+                
+                final StringReader stringReader = new StringReader(json);
+                services.add(registeredServiceJsonSerializer.fromJson(stringReader));
             }
             return services;
         } catch (final RuntimeException e) {
@@ -160,9 +165,9 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
     public RegisteredService findServiceById(final long id) {
         try {
             logger.debug("Lookup for service {}", id);
-            return gson.fromJson(
-                    (String) couchbase.getClient().get(String.valueOf(id)),
-                    AbstractRegisteredService.class);
+            final String json = (String) couchbase.getClient().get(String.valueOf(id));
+            final StringReader stringReader = new StringReader(json);
+            return registeredServiceJsonSerializer.fromJson(stringReader);
         } catch (final Exception e) {
             logger.error("Unable to get registered service", e);
             return null;
