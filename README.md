@@ -27,7 +27,7 @@ Add the repo and the dependency to their respective blocks.
     <dependency>
       <groupId>se.kth.infosys</groupId>
       <artifactId>cas-server-integration-couchbase</artifactId>
-      <version>2.1.2</version>
+      <version>3.0.0</version>
     </dependency>
   <dependencies>
 ```
@@ -50,9 +50,9 @@ replacing the existing serviceRegistryDao bean.
 
 ```xml
   <bean id="serviceRegistryClientFactory" class="se.kth.infosys.login.couchbase.CouchbaseClientFactory">
-    <property name="uris">
+    <property name="nodes">
       <list>
-        <value>SOME COUCHBASE URI</value>
+        <value>SOME COUCHBASE NODE</value>
       </list>
     </property>
     <property name="bucket" value="SOME SERVICE REGISTRY BUCKET" />
@@ -80,9 +80,9 @@ Replace the ticketRegistry.xml file with the following.
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd">
 
   <bean id="ticketRegistryClientFactory" class="se.kth.infosys.login.couchbase.CouchbaseClientFactory">
-    <property name="uris">
+    <property name="nodes">
       <list>
-        <value>SOME COUCHBASE URI</value>
+        <value>SOME COUCHBASE NODE</value>
       </list>
     </property>          
     <property name="bucket" value="SOME TICKET REGISTRY BUCKET" />
@@ -110,34 +110,35 @@ webapp needs to be setup in the same way as the CAS server with the additional c
 
 ```xml
 <bean id="serviceRegistryReloaderJobDetail"
-    class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean"
-    p:targetObject-ref="servicesManager"
-    p:targetMethod="reload"/>
+      class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean"
+      p:targetObject-ref="servicesManager"
+      p:targetMethod="reload"/>
 
-<bean id="periodicServiceRegistryReloaderTrigger" class="org.springframework.scheduling.quartz.SimpleTriggerBean"
+<bean id="periodicServiceRegistryReloaderTrigger"
+      class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean"
       p:jobDetail-ref="serviceRegistryReloaderJobDetail"
       p:startDelay="${service.registry.quartz.reloader.startDelay:120000}"
       p:repeatInterval="${service.registry.quartz.reloader.repeatInterval:120000}"/>
 
 <bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
-  <property name="triggers">
-    <list>
-      <ref bean="periodicServiceRegistryReloaderTrigger"/>
-    </list>
-  </property>
+    <property name="triggers">
+        <list>
+            <ref bean="periodicServiceRegistryReloaderTrigger"/>
+        </list>
+    </property>
 </bean>
 ```
 
 ### More about configuration of the CouchbaseClientFactory ###
 
-The only truly mandatory setting of the CouchbaseClientFactory is the list of URIs.
+The only truly mandatory setting of the CouchbaseClientFactory is the list of nodes.
 The other settings are optional, but the registers are designed to be stored in buckets
 of their own as mentioned above, so in reality the bucket property must also be set.
 
 
 #### Properties ####
 
-* `uris` _Required_. List of URIs to the Couchbase servers.
+* `nodes` _Required_. List of Couchbase server nodes.
 * `bucket` _Optional (well, sort of)_. Name of the bucket to use for this client.
 * `password` _Optional_. The optional password set for the bucket.
 
@@ -151,14 +152,8 @@ startup.
 
 ## Status of the project ##
 
-Currently a non-redundant server running Couchbase as a backend for the 
-MemcacheTicketRegistry is in production at KTH.
-
-The server based on Couchbase is currently in development and development testing at KTH.
-It will soon be deployed for integration testing in a larger reference environment.
-Later this spring (2013) it is expected to deploy the couchbase aware server to production 
-at KTH. Around that time we will start to test redundant configurations using this server
-in the reference environment for future deployment in production.  
+A CAS server running on top of a Couchbase cluster has been in service at KTH since 2014.
+However, it remains untested to run the CAS front end on multiple servers for redundancy.
 
 
 ## Code management ##
@@ -174,7 +169,6 @@ approach.
 
 
 ## License and acknowledgements ##
-
 
 This module is released under the Apache Licens v2, see the file LICENSE.md
 for details.
