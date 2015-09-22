@@ -1,7 +1,7 @@
 package se.kth.infosys.login.couchbase;
 
 /*
- * Copyright (C) 2013 KTH, Kungliga tekniska hogskolan, http://www.kth.se
+ * Copyright (C) 2015 KTH, Kungliga tekniska hogskolan, http://www.kth.se
  *
  * This file is part of cas-server-integration-couchbase.
  *
@@ -18,7 +18,6 @@ package se.kth.infosys.login.couchbase;
  * limitations under the License.
  */
 
-import java.net.URI;
 import java.util.Date;
 import java.util.List;
 import java.util.Timer;
@@ -30,10 +29,12 @@ import javax.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.couchbase.client.CouchbaseClient;
-import com.couchbase.client.protocol.views.DesignDocument;
-import com.couchbase.client.protocol.views.InvalidViewException;
-import com.couchbase.client.protocol.views.ViewDesign;
+import com.couchbase.client.java.Bucket;
+import com.couchbase.client.java.Cluster;
+import com.couchbase.client.java.CouchbaseCluster;
+import com.couchbase.client.java.error.ViewDoesNotExistException;
+import com.couchbase.client.java.view.DesignDocument;
+import com.couchbase.client.java.view.View;
 
 /**
  * A factory class which produces a client for a particular Couchbase bucket.
@@ -51,23 +52,21 @@ public class CouchbaseClientFactory extends TimerTask {
     private final Logger logger = LoggerFactory.getLogger(CouchbaseClientFactory.class);
     private final Timer timer = new Timer();
 
-    private CouchbaseClient client;
+    private Cluster cluster;
 
     @NotNull
-    private List<URI> uris;
+    private List<String> nodes;
 
     /* The name of the bucket, will use the default bucket unless otherwise specified. */
-    private String bucket = "default";
-
-    /* NOTE: username is currently not used in Couchbase 2.0, may be in the future. */
-    private String username = "";
+    private String bucketName = "default";
+    private Bucket bucket;
 
     /* Password for the bucket if any. */
     private String password = "";
 
     /* Design document and views to create in the bucket, if any. */
     private String designDocument;
-    private List<ViewDesign> views;
+    private List<View> views;
 
 
     /**
@@ -94,21 +93,20 @@ public class CouchbaseClientFactory extends TimerTask {
     public void shutdown() throws Exception {
         timer.cancel();
         timer.purge();
-        if (client != null) {
-            client.shutdown();
+        if (cluster != null) {
+            cluster.disconnect();
         }
     }
 
 
     /**
-     * Fetch a client for the database.
+     * Retrieve the Couchbase bucket.
      * 
-     * @return the client if available.
-     * @throws RuntimeException if client is not initialized yet.
+     * @return the bucket.
      */
-    public CouchbaseClient getClient() {
-        if (client != null) {
-            return client;
+    public Bucket bucket() {
+        if (bucket != null) {
+            return bucket;
         } else {
             throw new RuntimeException("Conncetion to bucket " + bucket + " not initialized yet.");
         }
@@ -121,7 +119,7 @@ public class CouchbaseClientFactory extends TimerTask {
      * @param documentName name of the Couchbase design document.
      * @param views the list of Couchbase views (i.e. indexes) to create in the document.
      */
-    public void ensureIndexes(final String documentName, final List<ViewDesign> views) {
+    public void ensureIndexes(final String documentName, final List<View> views) {
         this.designDocument = documentName;
         this.views = views;
     }
@@ -133,27 +131,22 @@ public class CouchbaseClientFactory extends TimerTask {
      * @param documentName the name of the design document.
      * @param views the views to ensure exists in the database.
      */
-    private void doEnsureIndexes(final String documentName, final List<ViewDesign> views) {
+    private void doEnsureIndexes(final String documentName, final List<View> views) {
         DesignDocument document;
         try {
-            document = client.getDesignDoc(documentName);
-            final List<ViewDesign> oldViews = document.getViews();
+            document = bucket.bucketManager().getDesignDocument(documentName);
+            final List<View> oldViews = document.views();
 
-            for (final ViewDesign view : views) {
+            for (final View view : views) {
                 if (!isViewInList(view, oldViews)) {
-                    throw new InvalidViewException("Missing view: " + view.getName());
+                    throw new ViewDoesNotExistException("Missing view: " + view.name());
                 }
             }
             logger.info("All views are already created for bucket {}", bucket);
-        } catch (final InvalidViewException e) {
+        } catch (final ViewDoesNotExistException e) {
             logger.warn("Missing indexes in database for document {}, creating new.", documentName);
-            document = new DesignDocument(documentName);
-            for (final ViewDesign view : views) {
-                document.getViews().add(view);
-                if (!client.createDesignDoc(document)) {
-                    throw new InvalidViewException("Failed to create views.");
-                }
-            }
+            document = DesignDocument.create(documentName, views);
+            bucket.bucketManager().upsertDesignDocument(document);
         }
     }
 
@@ -163,8 +156,8 @@ public class CouchbaseClientFactory extends TimerTask {
      * @param stack the list of view designs to look in
      * @return true if needle exists in stack
      */
-    private static boolean isViewInList(final ViewDesign needle, final List<ViewDesign> stack) {
-        for (final ViewDesign view : stack) {
+    private static boolean isViewInList(final View needle, final List<View> stack) {
+        for (final View view : stack) {
             if (equals(needle, view)) {
                 return true;
             }
@@ -178,10 +171,10 @@ public class CouchbaseClientFactory extends TimerTask {
      * @param d2 another view design.
      * @return true if designs are equal.
      */
-    private static boolean equals(final ViewDesign d1, final ViewDesign d2) {
-        return (d1.getName().equals(d2.getName())
-                && d1.getMap().equals(d2.getMap())
-                && d1.getReduce().equals(d2.getReduce()));
+    private static boolean equals(final View d1, final View d2) {
+        return (d1.name().equals(d2.name())
+                && d1.map().equals(d2.map())
+                && d1.reduce().equals(d2.reduce()));
     }
 
 
@@ -190,27 +183,25 @@ public class CouchbaseClientFactory extends TimerTask {
      */
     public void run() {
         try {
-            logger.info("Trying to connect to couchbase bucket {}", bucket);
-            client = new CouchbaseClient(uris, bucket, username, password);
+            logger.info("Trying to connect to couchbase bucket {}", bucketName);
+            cluster = CouchbaseCluster.create(nodes);
+            bucket = cluster.openBucket(bucketName, password);
+            
             timer.cancel();
             if (views != null) {
                 doEnsureIndexes(designDocument, views);
             }
         } catch (final Exception e) {
-            logger.error("Failed to connect to Couchbase bucket {}, retrying...", bucket);
+            logger.error("Failed to connect to Couchbase bucket {}, retrying...", bucketName);
         }
     }
 
-    public void setUris(final List<URI> uris) {
-        this.uris = uris;
+    public void setNodes(final List<String> nodes) {
+        this.nodes = nodes;
     }
 
     public void setBucket(final String bucket) {
-        this.bucket = bucket;
-    }
-
-    public void setUsername(final String username) {
-        this.username = username;
+        this.bucketName = bucket;
     }
 
     public void setPassword(final String password) {

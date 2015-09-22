@@ -1,7 +1,7 @@
 package se.kth.infosys.login.couchbase;
 
 /*
- * Copyright (C) 2013 KTH, Kungliga tekniska hogskolan, http://www.kth.se
+ * Copyright (C) 2015 KTH, Kungliga tekniska hogskolan, http://www.kth.se
  *
  * This file is part of cas-server-integration-couchbase.
  *
@@ -22,7 +22,6 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Timer;
@@ -35,15 +34,17 @@ import org.jasig.cas.services.AbstractRegisteredService;
 import org.jasig.cas.services.RegisteredService;
 import org.jasig.cas.services.ServiceRegistryDao;
 import org.jasig.cas.util.JsonSerializer;
+import org.jasig.cas.util.services.RegisteredServiceJsonSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.couchbase.client.CouchbaseClient;
-import com.couchbase.client.protocol.views.Query;
-import com.couchbase.client.protocol.views.View;
-import com.couchbase.client.protocol.views.ViewDesign;
-import com.couchbase.client.protocol.views.ViewResponse;
-import com.couchbase.client.protocol.views.ViewRow;
+import com.couchbase.client.java.Bucket;
+import com.couchbase.client.java.document.JsonStringDocument;
+import com.couchbase.client.java.view.DefaultView;
+import com.couchbase.client.java.view.View;
+import com.couchbase.client.java.view.ViewQuery;
+import com.couchbase.client.java.view.ViewResult;
+import com.couchbase.client.java.view.ViewRow;
 
 /**
  * A Service Registry storage backend which uses the memcached protocol.
@@ -62,10 +63,10 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
     /*
      * Views, or indexes, in the database.
      */
-    private static final ViewDesign ALL_SERVICES_VIEW = new ViewDesign(
+    private static final View ALL_SERVICES_VIEW = DefaultView.create(
             "all_services",
             "function(d,m) {if (!isNaN(m.id)) {emit(m.id);}}");
-    private static final List<ViewDesign> ALL_VIEWS = Arrays.asList(new ViewDesign[] {
+    private static final List<View> ALL_VIEWS = Arrays.asList(new View[] {
             ALL_SERVICES_VIEW
     });
     private static final String UTIL_DOCUMENT = "utils";
@@ -92,6 +93,12 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
         this.registeredServiceJsonSerializer = registeredServiceJsonSerializer;
     }
 
+    /**
+     * Default constructor.
+     */
+    public CouchbaseServiceRegistryDaoImpl() {
+        this(new RegisteredServiceJsonSerializer());
+    }
 
     /** 
      * {@inheritDoc}
@@ -104,14 +111,14 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
         registeredServiceJsonSerializer.toJson(stringWriter, registeredService);
         
         if (registeredService.getId() == RegisteredService.INITIAL_IDENTIFIER_VALUE) {
-            final long id = couchbase.getClient().incr("LAST_ID", 1, initialId);
+            final long id = couchbase.bucket().counter("LAST_ID", 1, initialId).content().longValue();
             ((AbstractRegisteredService) registeredService).setId(id);
         }
 
-        couchbase.getClient().set(
-                String.valueOf(registeredService.getId()), 
-                0,
-                stringWriter.toString());
+        couchbase.bucket().upsert(
+                JsonStringDocument.create(
+                        String.valueOf(registeredService.getId()), 
+                        0, stringWriter.toString()));
         return registeredService;
     }
 
@@ -122,7 +129,7 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
     @Override
     public boolean delete(final RegisteredService registeredService) {
         logger.debug("Deleting service {}", registeredService);
-        couchbase.getClient().delete(String.valueOf(registeredService.getId()));
+        couchbase.bucket().remove(String.valueOf(registeredService.getId()));
         return true;
     }
 
@@ -135,16 +142,11 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
         try {
             logger.debug("Loading services");
 
-            final CouchbaseClient client = couchbase.getClient();
-            final View allKeys = client.getView(UTIL_DOCUMENT, ALL_SERVICES_VIEW.getName());
-            final Query query = new Query();
-            query.setIncludeDocs(true);
-            final ViewResponse response = client.query(allKeys, query);
-            final Iterator<ViewRow> iterator = response.iterator();
-
+            final Bucket bucket = couchbase.bucket();
+            final ViewResult allKeys = bucket.query(ViewQuery.from(UTIL_DOCUMENT, ALL_SERVICES_VIEW.name()));
             final List<RegisteredService> services = new LinkedList<RegisteredService>();
-            while (iterator.hasNext()) {
-                final String json = (String) iterator.next().getDocument();
+            for (final ViewRow row : allKeys) {
+                final String json = (String) row.document().content().toString();
                 logger.debug("Found service: {}", json);
                 
                 final StringReader stringReader = new StringReader(json);
@@ -165,7 +167,7 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
     public RegisteredService findServiceById(final long id) {
         try {
             logger.debug("Lookup for service {}", id);
-            final String json = (String) couchbase.getClient().get(String.valueOf(id));
+            final String json = couchbase.bucket().get(String.valueOf(id)).content().toString();
             final StringReader stringReader = new StringReader(json);
             return registeredServiceJsonSerializer.fromJson(stringReader);
         } catch (final Exception e) {
