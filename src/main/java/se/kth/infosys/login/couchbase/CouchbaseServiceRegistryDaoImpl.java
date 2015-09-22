@@ -39,7 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.couchbase.client.java.Bucket;
-import com.couchbase.client.java.document.JsonStringDocument;
+import com.couchbase.client.java.document.RawJsonDocument;
 import com.couchbase.client.java.view.DefaultView;
 import com.couchbase.client.java.view.View;
 import com.couchbase.client.java.view.ViewQuery;
@@ -116,7 +116,7 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
         }
 
         couchbase.bucket().upsert(
-                JsonStringDocument.create(
+                RawJsonDocument.create(
                         String.valueOf(registeredService.getId()), 
                         0, stringWriter.toString()));
         return registeredService;
@@ -146,7 +146,7 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
             final ViewResult allKeys = bucket.query(ViewQuery.from(UTIL_DOCUMENT, ALL_SERVICES_VIEW.name()));
             final List<RegisteredService> services = new LinkedList<RegisteredService>();
             for (final ViewRow row : allKeys) {
-                final String json = (String) row.document().content().toString();
+                final String json = (String) row.document(RawJsonDocument.class).content().toString();
                 logger.debug("Found service: {}", json);
                 
                 final StringReader stringReader = new StringReader(json);
@@ -167,7 +167,7 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
     public RegisteredService findServiceById(final long id) {
         try {
             logger.debug("Lookup for service {}", id);
-            final String json = couchbase.bucket().get(String.valueOf(id)).content().toString();
+            final String json = couchbase.bucket().get(String.valueOf(id), RawJsonDocument.class).content().toString();
             final StringReader stringReader = new StringReader(json);
             return registeredServiceJsonSerializer.fromJson(stringReader);
         } catch (final Exception e) {
