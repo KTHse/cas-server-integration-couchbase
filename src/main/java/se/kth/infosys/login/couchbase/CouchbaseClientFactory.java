@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.CouchbaseCluster;
-import com.couchbase.client.java.error.ViewDoesNotExistException;
 import com.couchbase.client.java.view.DesignDocument;
 import com.couchbase.client.java.view.View;
 
@@ -108,7 +107,7 @@ public class CouchbaseClientFactory extends TimerTask {
         if (bucket != null) {
             return bucket;
         } else {
-            throw new RuntimeException("Conncetion to bucket " + bucket + " not initialized yet.");
+            throw new RuntimeException("Conncetion to bucket " + bucketName + " not initialized yet.");
         }
     }
 
@@ -132,49 +131,13 @@ public class CouchbaseClientFactory extends TimerTask {
      * @param views the views to ensure exists in the database.
      */
     private void doEnsureIndexes(final String documentName, final List<View> views) {
-        DesignDocument document;
-        try {
-            document = bucket.bucketManager().getDesignDocument(documentName);
-            final List<View> oldViews = document.views();
-
-            for (final View view : views) {
-                if (!isViewInList(view, oldViews)) {
-                    throw new ViewDoesNotExistException("Missing view: " + view.name());
-                }
-            }
-            logger.info("All views are already created for bucket {}", bucket);
-        } catch (final ViewDoesNotExistException e) {
-            logger.warn("Missing indexes in database for document {}, creating new.", documentName);
-            document = DesignDocument.create(documentName, views);
-            bucket.bucketManager().upsertDesignDocument(document);
+        logger.debug("Ensure that indexes exist in bucket {}.", bucket.name());
+        final DesignDocument newDocument = DesignDocument.create(documentName, views);
+        final DesignDocument document = bucket.bucketManager().getDesignDocument(documentName);
+        if (!newDocument.equals(document)) {
+            logger.warn("Missing indexes in bucket {} for document {}, creating new.", bucket.name(), documentName);
+            bucket.bucketManager().upsertDesignDocument(newDocument);
         }
-    }
-
-
-    /**
-     * @param needle the view design to look for
-     * @param stack the list of view designs to look in
-     * @return true if needle exists in stack
-     */
-    private static boolean isViewInList(final View needle, final List<View> stack) {
-        for (final View view : stack) {
-            if (equals(needle, view)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-
-    /**
-     * @param d1 a view design.
-     * @param d2 another view design.
-     * @return true if designs are equal.
-     */
-    private static boolean equals(final View d1, final View d2) {
-        return (d1.name().equals(d2.name())
-                && d1.map().equals(d2.map())
-                && d1.reduce().equals(d2.reduce()));
     }
 
 
@@ -186,13 +149,15 @@ public class CouchbaseClientFactory extends TimerTask {
             logger.info("Trying to connect to couchbase bucket {}", bucketName);
             cluster = CouchbaseCluster.create(nodes);
             bucket = cluster.openBucket(bucketName, password);
-            
-            timer.cancel();
+
+            logger.info("Connected to Couchbase bucket {}.", bucketName);
+
             if (views != null) {
                 doEnsureIndexes(designDocument, views);
             }
+            timer.cancel();
         } catch (final Exception e) {
-            logger.error("Failed to connect to Couchbase bucket {}, retrying...", bucketName);
+            logger.error("Failed to connect to Couchbase bucket {}: {}, retrying...", bucketName, e);
         }
     }
 
