@@ -154,7 +154,7 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
             }
             return services;
         } catch (final RuntimeException e) {
-            logger.warn("Unable to load services.", e.getMessage());
+            logger.warn("Unable to load services: {}", e);
             return new LinkedList<RegisteredService>();
         }
     }
@@ -171,7 +171,7 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
             final StringReader stringReader = new StringReader(json);
             return registeredServiceJsonSerializer.fromJson(stringReader);
         } catch (final Exception e) {
-            logger.error("Unable to get registered service", e);
+            logger.error("Unable to get registered service: {}", e);
             return null;
         }
     }
@@ -221,7 +221,7 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
             TIMER.cancel();
             logger.debug("Stored pre configured services from XML in registry.");
         } catch (final RuntimeException e) {
-            logger.error("Unable to save pre configured services, retrying...", e);
+            logger.error("Unable to save pre configured services: {}, retrying...", e);
         }
     }
 

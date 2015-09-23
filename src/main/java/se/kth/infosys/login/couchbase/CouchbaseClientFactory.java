@@ -133,8 +133,7 @@ public class CouchbaseClientFactory extends TimerTask {
     private void doEnsureIndexes(final String documentName, final List<View> views) {
         logger.debug("Ensure that indexes exist in bucket {}.", bucket.name());
         final DesignDocument newDocument = DesignDocument.create(documentName, views);
-        final DesignDocument document = bucket.bucketManager().getDesignDocument(documentName);
-        if (!newDocument.equals(document)) {
+        if (!newDocument.equals(bucket.bucketManager().getDesignDocument(documentName))) {
             logger.warn("Missing indexes in bucket {} for document {}, creating new.", bucket.name(), documentName);
             bucket.bucketManager().upsertDesignDocument(newDocument);
         }
@@ -146,7 +145,7 @@ public class CouchbaseClientFactory extends TimerTask {
      */
     public void run() {
         try {
-            logger.info("Trying to connect to couchbase bucket {}", bucketName);
+            logger.debug("Trying to connect to couchbase bucket {}", bucketName);
             cluster = CouchbaseCluster.create(nodes);
             bucket = cluster.openBucket(bucketName, password);
 

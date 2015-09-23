@@ -89,7 +89,7 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
                     SerializableDocument.create(ticket.getId(), getTimeout(ticket), ticket);
             couchbase.bucket().upsert(document);
         } catch (final Exception e) {
-            logger.error("Failed updating {}", ticket, e);
+            logger.error("Failed updating {}: {}", ticket, e);
         }
     }
 
@@ -105,7 +105,7 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
                     SerializableDocument.create(ticket.getId(), getTimeout(ticket), ticket);
             couchbase.bucket().upsert(document);
         } catch (final Exception e) {
-            logger.error("Failed adding {}", ticket, e);
+            logger.error("Failed adding {}: {}", ticket, e);
         }
     }
 
@@ -120,7 +120,7 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
             couchbase.bucket().remove(ticketId);
             return true;
         } catch (final Exception e) {
-            logger.error("Failed deleting {}", ticketId, e);
+            logger.error("Failed deleting {}: {}", ticketId, e);
             return false;
         }
     }
@@ -137,7 +137,7 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
                 return getProxiedTicketInstance(t);
             }
         } catch (final Exception e) {
-            logger.error("Failed fetching {} ", ticketId, e);
+            logger.error("Failed fetching {}: {}", ticketId, e);
         }
         return null;
     }
