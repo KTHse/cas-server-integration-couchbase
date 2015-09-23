@@ -1,6 +1,17 @@
 Release notes
 =============
 
+3.0.0
+
+* CAS 4.1.0
+* Couchbase client 2.2.0.
+* Note that configuration has changed slightly. The parameter named uris is 
+  renamed to nodes.
+* Service registry serialization is replaced with CAS built in JSON serialization.
+  The unit tests for this functionality is removed. This means that all unit tests
+  are removed. Testing is done as integration tests with the CAS server.
+* Fix issue on startup on empty bucket without design document.
+
 2.1.2
 
 * Couchbase client 1.4.4.
