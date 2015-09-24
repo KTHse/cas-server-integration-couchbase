@@ -132,7 +132,7 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
     @Override
     public Ticket getTicket(final String ticketId) {
         try {
-            final Ticket t = (Ticket) couchbase.bucket().get(ticketId);
+            final Ticket t = (Ticket) couchbase.bucket().get(ticketId, SerializableDocument.class).content();
             if (t != null) {
                 return getProxiedTicketInstance(t);
             }

@@ -87,10 +87,10 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
 
     /**
      * Default constructor.
-     * @param registeredServiceJsonSerializer the JSON serializer to use.
+     * @param serviceJsonSerializer the JSON serializer to use.
      */
-    public CouchbaseServiceRegistryDaoImpl(final JsonSerializer<RegisteredService> registeredServiceJsonSerializer) {
-        this.registeredServiceJsonSerializer = registeredServiceJsonSerializer;
+    public CouchbaseServiceRegistryDaoImpl(final JsonSerializer<RegisteredService> serviceJsonSerializer) {
+        this.registeredServiceJsonSerializer = serviceJsonSerializer;
     }
 
     /**
@@ -104,22 +104,23 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
      * {@inheritDoc}
      */
     @Override
-    public RegisteredService save(final RegisteredService registeredService) {
-        logger.debug("Saving service {}", registeredService);
+    public RegisteredService save(final RegisteredService service) {
+        if (service.getId() == RegisteredService.INITIAL_IDENTIFIER_VALUE
+                && service instanceof AbstractRegisteredService) {
+            logger.debug("Service id not set. Setting it from counter in couchbase.");
+            final long id = couchbase.bucket().counter("LAST_ID", 1, initialId).content().longValue();
+            ((AbstractRegisteredService) service).setId(id);
+        }
+        logger.debug("Saving service {}", service);
 
         final StringWriter stringWriter = new StringWriter();
-        registeredServiceJsonSerializer.toJson(stringWriter, registeredService);
-        
-        if (registeredService.getId() == RegisteredService.INITIAL_IDENTIFIER_VALUE) {
-            final long id = couchbase.bucket().counter("LAST_ID", 1, initialId).content().longValue();
-            ((AbstractRegisteredService) registeredService).setId(id);
-        }
+        registeredServiceJsonSerializer.toJson(stringWriter, service);
 
         couchbase.bucket().upsert(
                 RawJsonDocument.create(
-                        String.valueOf(registeredService.getId()), 
+                        String.valueOf(service.getId()), 
                         0, stringWriter.toString()));
-        return registeredService;
+        return service;
     }
 
 
@@ -127,9 +128,9 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
      * {@inheritDoc}
      */
     @Override
-    public boolean delete(final RegisteredService registeredService) {
-        logger.debug("Deleting service {}", registeredService);
-        couchbase.bucket().remove(String.valueOf(registeredService.getId()));
+    public boolean delete(final RegisteredService service) {
+        logger.debug("Deleting service {}", service);
+        couchbase.bucket().remove(String.valueOf(service.getId()));
         return true;
     }
 
@@ -146,7 +147,7 @@ public final class CouchbaseServiceRegistryDaoImpl extends TimerTask implements 
             final ViewResult allKeys = bucket.query(ViewQuery.from(UTIL_DOCUMENT, ALL_SERVICES_VIEW.name()));
             final List<RegisteredService> services = new LinkedList<RegisteredService>();
             for (final ViewRow row : allKeys) {
-                final String json = (String) row.document(RawJsonDocument.class).content().toString();
+                final String json = (String) row.document(RawJsonDocument.class).content();
                 logger.debug("Found service: {}", json);
                 
                 final StringReader stringReader = new StringReader(json);
