@@ -10,7 +10,7 @@ Release notes
 * Service registry serialization is replaced with CAS built in JSON serialization.
   The unit tests for this functionality is removed. This means that all unit tests
   are removed. Testing is done as integration tests with the CAS server.
-* Fix issue on startup on empty bucket without design document.
+* Fix issue on startup on empty bucket without views.
 
 2.1.2
 
