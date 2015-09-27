@@ -1,7 +1,7 @@
 Licence
 =======
 
-Copyright (C) 2013 KTH, Kungliga tekniska hogskolan, http://www.kth.se
+Copyright (C) 2015 KTH, Kungliga tekniska hogskolan, http://www.kth.se
 
 This project contains files derived from work with the following copyright:
 

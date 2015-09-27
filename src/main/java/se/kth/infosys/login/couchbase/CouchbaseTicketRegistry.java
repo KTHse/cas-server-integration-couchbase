@@ -1,7 +1,7 @@
 package se.kth.infosys.login.couchbase;
 
 /*
- * Copyright (C) 2013 KTH, Kungliga tekniska hogskolan, http://www.kth.se
+ * Copyright (C) 2015 KTH, Kungliga tekniska hogskolan, http://www.kth.se
  *
  * This file is part of cas-server-integration-couchbase.
  *
@@ -34,20 +34,37 @@ import org.jasig.cas.ticket.TicketGrantingTicket;
 import org.jasig.cas.ticket.TicketGrantingTicketImpl;
 import org.jasig.cas.ticket.registry.AbstractDistributedTicketRegistry;
 
-import com.couchbase.client.protocol.views.ComplexKey;
-import com.couchbase.client.protocol.views.Query;
-import com.couchbase.client.protocol.views.View;
-import com.couchbase.client.protocol.views.ViewDesign;
-import com.couchbase.client.protocol.views.ViewResponse;
-import com.couchbase.client.protocol.views.ViewRow;
+import com.couchbase.client.java.document.SerializableDocument;
+import com.couchbase.client.java.view.DefaultView;
+import com.couchbase.client.java.view.View;
+import com.couchbase.client.java.view.ViewQuery;
+import com.couchbase.client.java.view.ViewResult;
+import com.couchbase.client.java.view.ViewRow;
+
 
 /**
  * A Ticket Registry storage backend which uses the memcached protocol.
  * CouchBase is a multi host NoSQL database with a memcached interface
  * to persistent storage which also is quite usable as a replicated
  * tickage storage engine for multiple front end CAS servers.
+ * 
+ * @author Fredrik Jönsson "fjo@kth.se"
+ * @since 4.0
  */
 public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegistry implements TicketRegistryState {
+    private static final String END_TOKEN = "\u02ad";
+    /*
+     * Views, or indexes, in the database. 
+     */
+    private static final View ALL_TICKETS_VIEW = DefaultView.create(
+            "all_tickets", 
+            "function(d,m) {emit(m.id);}",
+            "_count");
+    private static final List<View> ALL_VIEWS = Arrays.asList(new View[] {
+            ALL_TICKETS_VIEW
+    });
+    private static final String UTIL_DOCUMENT = "statistics";
+
     /* Couchbase client factory */
     @NotNull
     private CouchbaseClientFactory couchbase;
@@ -57,9 +74,6 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
 
     @Min(0)
     private int stTimeout;
-
-    private static String END_TOKEN = "\u02ad";
-
 
     /**
      * Default constructor.
@@ -74,14 +88,11 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
     protected void updateTicket(final Ticket ticket) {
         logger.debug("Updating ticket {}", ticket);
         try {
-            if (!couchbase.getClient().replace(ticket.getId(), getTimeout(ticket), ticket).get()) {
-                logger.error("Failed updating {}", ticket);
-            }
-        } catch (final InterruptedException e) {
-            logger.warn("Interrupted while waiting for response to async replace operation for ticket {}. "
-                    + "Cannot determine whether update was successful.", ticket);
+            final SerializableDocument document = 
+                    SerializableDocument.create(ticket.getId(), getTimeout(ticket), ticket);
+            couchbase.bucket().upsert(document);
         } catch (final Exception e) {
-            logger.error("Failed updating {}", ticket, e);
+            logger.error("Failed updating {}: {}", ticket, e);
         }
     }
 
@@ -93,14 +104,11 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
     public void addTicket(final Ticket ticket) {
         logger.debug("Adding ticket {}", ticket);
         try {
-            if (!couchbase.getClient().add(ticket.getId(), getTimeout(ticket), ticket).get()) {
-                logger.error("Failed adding {}", ticket);
-            }
-        } catch (final InterruptedException e) {
-            logger.warn("Interrupted while waiting for response to async add operation for ticket {}. "
-                    + "Cannot determine whether add was successful.", ticket);
+            final SerializableDocument document = 
+                    SerializableDocument.create(ticket.getId(), getTimeout(ticket), ticket);
+            couchbase.bucket().upsert(document);
         } catch (final Exception e) {
-            logger.error("Failed adding {}", ticket, e);
+            logger.error("Failed adding {}: {}", ticket, e);
         }
     }
 
@@ -112,11 +120,12 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
     public boolean deleteTicket(final String ticketId) {
         logger.debug("Deleting ticket {}", ticketId);
         try {
-            return couchbase.getClient().delete(ticketId).get();
+            couchbase.bucket().remove(ticketId);
+            return true;
         } catch (final Exception e) {
-            logger.error("Failed deleting {}", ticketId, e);
+            logger.error("Failed deleting {}: {}", ticketId, e);
+            return false;
         }
-        return false;
     }
 
 
@@ -126,12 +135,12 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
     @Override
     public Ticket getTicket(final String ticketId) {
         try {
-            final Ticket t = (Ticket) couchbase.getClient().get(ticketId);
+            final Ticket t = (Ticket) couchbase.bucket().get(ticketId, SerializableDocument.class).content();
             if (t != null) {
                 return getProxiedTicketInstance(t);
             }
         } catch (final Exception e) {
-            logger.error("Failed fetching {} ", ticketId, e);
+            logger.error("Failed fetching {}: {}", ticketId, e);
         }
         return null;
     }
@@ -178,14 +187,7 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
      */
     @Override
     public int sessionCount() {
-        String prefix = TicketGrantingTicketImpl.PREFIX + "-";
-
-        Query query = new Query();
-        query.setIncludeDocs(false);
-        query.setRange(ComplexKey.of(prefix), ComplexKey.of(prefix + END_TOKEN));
-        query.setReduce(true);
-
-        return getCountFromView(query);
+        return runQuery(TicketGrantingTicketImpl.PREFIX + "-");
     }
 
 
@@ -194,32 +196,22 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
      */
     @Override
     public int serviceTicketCount() {
-        String prefix = ServiceTicketImpl.PREFIX + "-";
-
-        Query query = new Query();
-        query.setIncludeDocs(false);
-        query.setRange(ComplexKey.of(prefix), ComplexKey.of(prefix + END_TOKEN));
-        query.setReduce(true);
-
-        return getCountFromView(query);
+        return runQuery(ServiceTicketImpl.PREFIX + "-");
     }
 
 
     /**
-     * Returns the number of elements in view.
-     * @param query a couchbase Query.
-     * @return number of items in view as reported by couchbase.
+     * Run the statistics query.
+     * @param prefix the ticket prefix to get statistics for.
+     * @return the number of tickets.
      */
-    private int getCountFromView(final Query query) {
-        View view = couchbase.getClient().getView(UTIL_DOCUMENT, ALL_TICKETS_VIEW.getName());
-        ViewResponse response = (ViewResponse) couchbase.getClient().query(view, query);
-        Iterator<ViewRow> iterator = response.iterator();
-        if (iterator.hasNext()) {
-            ViewRow res = response.iterator().next();
-            return Integer.valueOf(res.getValue());
-        } else {
-            return 0;
-        }
+    private int runQuery(final String prefix) {
+        final ViewResult allKeys = couchbase.bucket().query(
+                ViewQuery.from(UTIL_DOCUMENT, "all_tickets")
+                    .startKey(prefix)
+                    .endKey(prefix + END_TOKEN)
+                    .reduce());
+        return getCountFromView(allKeys);
     }
 
 
@@ -267,15 +259,18 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
     }
 
 
-    /*
-     * Views, or indexes, in the database. 
+    /**
+     * Returns the number of elements in view.
+     * @param result a couchbase ViewResult.
+     * @return number of items in view as reported by couchbase.
      */
-    private static final ViewDesign ALL_TICKETS_VIEW = new ViewDesign(
-            "all_tickets", 
-            "function(d,m) {emit(m.id);}",
-            "_count");
-    private static final List<ViewDesign> ALL_VIEWS = Arrays.asList(new ViewDesign[] {
-            ALL_TICKETS_VIEW
-    });
-    private static final String UTIL_DOCUMENT = "statistics";
+    private int getCountFromView(final ViewResult result) {
+        final Iterator<ViewRow> iterator = result.iterator();
+        if (iterator.hasNext()) {
+            final ViewRow res = iterator.next();
+            return (Integer) res.value();
+        } else {
+            return 0;
+        }
+    }
 }
