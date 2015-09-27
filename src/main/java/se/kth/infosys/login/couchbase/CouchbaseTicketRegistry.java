@@ -20,6 +20,7 @@ package se.kth.infosys.login.couchbase;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.validation.constraints.Min;
@@ -38,6 +39,7 @@ import com.couchbase.client.java.view.DefaultView;
 import com.couchbase.client.java.view.View;
 import com.couchbase.client.java.view.ViewQuery;
 import com.couchbase.client.java.view.ViewResult;
+import com.couchbase.client.java.view.ViewRow;
 
 
 /**
@@ -50,6 +52,7 @@ import com.couchbase.client.java.view.ViewResult;
  * @since 4.0
  */
 public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegistry implements TicketRegistryState {
+    private static final String END_TOKEN = "\u02ad";
     /*
      * Views, or indexes, in the database. 
      */
@@ -184,11 +187,7 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
      */
     @Override
     public int sessionCount() {
-        final String prefix = TicketGrantingTicketImpl.PREFIX + "-";
-
-        final ViewResult allKeys = couchbase.bucket().query(
-                ViewQuery.from(UTIL_DOCUMENT, "all_tickets").startKey(prefix).reduce());
-        return allKeys.totalRows();
+        return runQuery(TicketGrantingTicketImpl.PREFIX + "-");
     }
 
 
@@ -197,11 +196,22 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
      */
     @Override
     public int serviceTicketCount() {
-        final String prefix = ServiceTicketImpl.PREFIX + "-";
+        return runQuery(ServiceTicketImpl.PREFIX + "-");
+    }
 
+
+    /**
+     * Run the statistics query.
+     * @param prefix the ticket prefix to get statistics for.
+     * @return the number of tickets.
+     */
+    private int runQuery(final String prefix) {
         final ViewResult allKeys = couchbase.bucket().query(
-                ViewQuery.from(UTIL_DOCUMENT, "all_tickets").startKey(prefix).reduce());
-        return allKeys.totalRows();
+                ViewQuery.from(UTIL_DOCUMENT, "all_tickets")
+                    .startKey(prefix)
+                    .endKey(prefix + END_TOKEN)
+                    .reduce());
+        return getCountFromView(allKeys);
     }
 
 
@@ -246,5 +256,21 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
      */
     public void setCouchbase(final CouchbaseClientFactory couchbase) {
         this.couchbase = couchbase;
+    }
+
+
+    /**
+     * Returns the number of elements in view.
+     * @param result a couchbase ViewResult.
+     * @return number of items in view as reported by couchbase.
+     */
+    private int getCountFromView(final ViewResult result) {
+        final Iterator<ViewRow> iterator = result.iterator();
+        if (iterator.hasNext()) {
+            final ViewRow res = iterator.next();
+            return (Integer) res.value();
+        } else {
+            return 0;
+        }
     }
 }
