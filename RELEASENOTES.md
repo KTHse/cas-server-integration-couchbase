@@ -1,6 +1,9 @@
 Release notes
 =============
 
+3.0.1
+* Fix broken ticket registry statistics.
+
 3.0.0
 
 * CAS 4.1.0
