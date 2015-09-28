@@ -135,14 +135,18 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
     @Override
     public Ticket getTicket(final String ticketId) {
         try {
-            final Ticket t = (Ticket) couchbase.bucket().get(ticketId, SerializableDocument.class).content();
-            if (t != null) {
+            final SerializableDocument document = couchbase.bucket().get(ticketId, SerializableDocument.class);
+            if (document != null) {
+                final Ticket t = (Ticket) document.content();
+                logger.debug("Got ticket {} from registry.", t);
                 return getProxiedTicketInstance(t);
             }
+            logger.debug("Ticket {} not found in registry.", ticketId);
+            return null;
         } catch (final Exception e) {
             logger.error("Failed fetching {}: {}", ticketId, e);
+            return null;
         }
-        return null;
     }
 
 
@@ -211,7 +215,13 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
                     .startKey(prefix)
                     .endKey(prefix + END_TOKEN)
                     .reduce());
-        return getCountFromView(allKeys);
+        final Iterator<ViewRow> iterator = allKeys.iterator();
+        if (iterator.hasNext()) {
+            final ViewRow res = iterator.next();
+            return (Integer) res.value();
+        } else {
+            return 0;
+        }
     }
 
 
@@ -256,21 +266,5 @@ public final class CouchbaseTicketRegistry extends AbstractDistributedTicketRegi
      */
     public void setCouchbase(final CouchbaseClientFactory couchbase) {
         this.couchbase = couchbase;
-    }
-
-
-    /**
-     * Returns the number of elements in view.
-     * @param result a couchbase ViewResult.
-     * @return number of items in view as reported by couchbase.
-     */
-    private int getCountFromView(final ViewResult result) {
-        final Iterator<ViewRow> iterator = result.iterator();
-        if (iterator.hasNext()) {
-            final ViewRow res = iterator.next();
-            return (Integer) res.value();
-        } else {
-            return 0;
-        }
     }
 }
