@@ -1,6 +1,9 @@
 Release notes
 =============
 
+3.0.2
+* Fix erroneous error log from ticket registry.
+
 3.0.1
 * Fix broken ticket registry statistics.
 
