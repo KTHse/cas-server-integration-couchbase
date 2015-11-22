@@ -23,14 +23,14 @@
   <parent>
     <groupId>org.jasig.cas</groupId>
     <artifactId>cas-server</artifactId>
-    <version>4.1.0</version>
+    <version>4.1.2</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>se.kth.infosys</groupId>
   <artifactId>cas-server-integration-couchbase</artifactId>
   <packaging>jar</packaging>
   <name>Jasig CAS Couchbase Integration</name>
-  <version>3.0.2</version>
+  <version>3.0.3</version>
 
   <distributionManagement>
     <repository>
