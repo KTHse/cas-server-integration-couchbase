@@ -1,6 +1,9 @@
 Release notes
 =============
 
+3.0.3
+* CAS 4.1.2
+
 3.0.2
 * Fix erroneous error log from ticket registry.
 
